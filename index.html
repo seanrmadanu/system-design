@@ -1,0 +1,1915 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A five-level visual guide to system design, from one server to consensus and correctness testing, with diagrams and curated videos.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231D56D2'/%3E%3Cpath d='M10 6v20M22 6v20M10 11h12M10 16h12M10 21h12' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>document.documentElement.classList.add('js')</script>
+<style>
+/* what the artifact host's skeleton used to provide */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* hide raw diagram source until mermaid draws it */
+.js pre.mermaid:not([data-processed]){visibility:hidden;min-height:140px}
+</style>
+<title>System Design Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: whiteboard ladder. Sticky level rail on top, one section per level, each concept = short text column + diagram column. Marker colors encode level. */
+:root{
+  --bg:#F4F6F9; --panel:#FFFFFF; --ink:#141C26; --muted:#556172; --line:#D7DDE5; --soft:#ECF0F5;
+  --l1:#17834A; --l2:#1D56D2; --l3:#7438CC; --l4:#B05000; --l5:#C0262D;
+  --l1t:#E4F3EA; --l2t:#E6EDFC; --l3t:#EFE8FA; --l4t:#FAEDE1; --l5t:#FAE6E7;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10141A; --panel:#171D25; --ink:#E4E9F0; --muted:#97A2B2; --line:#29323E; --soft:#1D242E;
+  --l1:#52C487; --l2:#7CA4FF; --l3:#B595FF; --l4:#F2A25C; --l5:#FF7B80;
+  --l1t:#14281D; --l2t:#162139; --l3t:#221A36; --l4t:#2E2116; --l5t:#311A1D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10141A; --panel:#171D25; --ink:#E4E9F0; --muted:#97A2B2; --line:#29323E; --soft:#1D242E;
+  --l1:#52C487; --l2:#7CA4FF; --l3:#B595FF; --l4:#F2A25C; --l5:#FF7B80;
+  --l1t:#14281D; --l2t:#162139; --l3t:#221A36; --l4t:#2E2116; --l5t:#311A1D; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1140px;margin:0 auto;padding-inline:clamp(16px,4vw,36px)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+code,.mono{font-family:var(--mono)}
+
+/* top */
+.top{padding-block:40px 20px;display:grid;gap:14px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.top h1{font-size:clamp(34px,6vw,60px);font-weight:800;line-height:1.02;letter-spacing:-.02em}
+.lede{margin:0;max-width:60ch;color:var(--muted);font-size:17px}
+
+/* level cards */
+.levels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding-block:8px 8px}
+.lvcard{display:grid;gap:6px;align-content:start;padding:14px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);text-decoration:none;border-top:5px solid var(--tc)}
+.lvcard:hover,.lvcard:focus-visible{border-color:var(--tc);outline:none}
+.lvcard .k{font:600 12px/1 var(--mono);color:var(--tc);letter-spacing:.06em}
+.lvcard b{font:700 19px/1.15 var(--display)}
+.lvcard span{font-size:13.5px;color:var(--muted);line-height:1.4}
+.lvcard .pg{font:500 12px/1 var(--mono);color:var(--muted);margin-top:4px}
+@media (max-width:900px){.levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.levels{grid-template-columns:minmax(0,1fr)}}
+
+/* sticky rail */
+.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.rail .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
+.rail a{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;border:1.5px solid var(--line);font:500 13px/1 var(--mono);text-decoration:none;background:var(--panel)}
+.rail a i{width:9px;height:9px;border-radius:50%;background:var(--tc)}
+.rail a:hover,.rail a:focus-visible{border-color:var(--tc);outline:none}
+.rail a.on{background:var(--tt);border-color:var(--tc)}
+
+/* map */
+.map{margin-block:22px 8px;padding:18px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
+.map h2{font-size:22px}
+.map p{margin:6px 0 0;color:var(--muted);font-size:14.5px}
+
+/* level section */
+.level{padding-block:44px 8px;scroll-margin-top:56px}
+.lv-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;padding-bottom:18px;border-bottom:3px solid var(--tc)}
+.lv-tag{font:600 clamp(30px,5vw,46px)/1 var(--mono);color:var(--tc)}
+.lv-head h2{font-size:clamp(28px,4.4vw,42px);font-weight:800;letter-spacing:-.015em;line-height:1.05}
+.lv-sub{margin:4px 0 0;color:var(--muted);max-width:68ch}
+.lv-sub b{color:var(--ink);font-weight:600}
+.lv-count{font:500 13px/1 var(--mono);color:var(--tc);background:var(--tt);padding:7px 10px;border-radius:999px;white-space:nowrap}
+@media (max-width:560px){.lv-head{grid-template-columns:auto minmax(0,1fr)}.lv-count{grid-column:1/-1;justify-self:start}}
+
+/* concept */
+.concept{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(16px,3vw,36px);padding-block:26px;border-bottom:1px solid var(--line);scroll-margin-top:60px}
+@media (max-width:860px){.concept{grid-template-columns:minmax(0,1fr)}}
+.c-text{min-width:0}
+.c-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.c-head h3{font-size:22px;font-weight:700;line-height:1.15}
+.c-text ul{margin:10px 0 0;padding-left:18px;display:grid;gap:6px}
+.c-text li::marker{color:var(--tc)}
+.c-text p{margin:10px 0 0}
+.c-text b{font-weight:600}
+.key{display:inline-block;margin-top:12px;font:500 13px/1.4 var(--mono);color:var(--tc);background:var(--tt);padding:6px 9px;border-radius:6px}
+.got{display:flex;align-items:center;gap:6px;flex:0 0 auto;font:500 12px/1 var(--mono);color:var(--muted);cursor:pointer;user-select:none;padding:6px 8px;border:1.5px solid var(--line);border-radius:999px}
+.got input{accent-color:var(--tc);margin:0;width:15px;height:15px}
+.got:has(input:checked){border-color:var(--tc);color:var(--tc);background:var(--tt)}
+.got:focus-within{outline:2px solid var(--tc);outline-offset:2px}
+
+/* figures */
+figure{margin:0;min-width:0}
+.c-fig{display:grid;gap:8px;align-content:start}
+.c-fig .box{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
+.c-fig svg{display:block;width:100%;height:auto;color:var(--ink)}
+figcaption{font-size:13.5px;color:var(--muted);line-height:1.45}
+@media (max-width:520px){.c-fig .box > svg[role="img"]{min-width:460px}}
+pre.mermaid{margin:0;background:transparent;text-align:center;font-family:var(--body)}
+
+/* svg vocabulary */
+.s{fill:none;stroke:currentColor;stroke-width:1.6}
+.sd{fill:none;stroke:currentColor;stroke-width:1.4;stroke-dasharray:5 4}
+.sm{fill:none;stroke:var(--muted);stroke-width:1.2}
+.sa{fill:none;stroke:var(--tc);stroke-width:2.2}
+.b{fill:var(--panel);stroke:currentColor;stroke-width:1.6}
+.bs{fill:var(--soft);stroke:currentColor;stroke-width:1.6}
+.ba{fill:var(--tt);stroke:var(--tc);stroke-width:2}
+.fa{fill:var(--tc)}
+.fs{fill:var(--soft)}
+.fp{fill:var(--panel)}
+.fi{fill:currentColor}
+.t{fill:currentColor;font:500 13px var(--body)}
+.tb{fill:currentColor;font:600 13px var(--body)}
+.tm{fill:var(--muted);font:500 11.5px var(--mono)}
+.ta{fill:var(--tc);font:600 12px var(--mono)}
+.tw{fill:var(--panel);font:600 11px var(--mono)}
+
+/* tables */
+.tbl{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:420px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px/1.3 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* worked example */
+.calc{margin-top:12px;font:13.5px/1.7 var(--mono);background:var(--soft);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:pre}
+
+/* watch */
+.watch{margin-top:26px;padding:18px;border-radius:12px;background:var(--tt);border:1.5px solid var(--tc)}
+.watch h3{font-size:20px;display:flex;gap:10px;align-items:center}
+.watch ul{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:2px}
+.watch li a{display:grid;grid-template-columns:7.5em minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:9px 8px;border-radius:8px;text-decoration:none}
+.watch li a:hover,.watch li a:focus-visible{background:var(--panel);outline:none}
+.watch .who{font:500 12px/1.3 var(--mono);color:var(--tc)}
+.watch .what{font-weight:500}
+.watch .what small{display:block;color:var(--muted);font-weight:400;font-size:13px}
+.watch .kind{font:500 11px/1 var(--mono);color:var(--muted);border:1px solid var(--line);background:var(--panel);padding:4px 6px;border-radius:5px;white-space:nowrap}
+@media (max-width:560px){.watch li a{grid-template-columns:minmax(0,1fr) auto}.watch .who{grid-column:1/-1}}
+
+/* practice + footer */
+.practice{padding-block:44px 10px}
+.practice h2{font-size:clamp(26px,4vw,36px);font-weight:800}
+.probs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:16px}
+.probs div{background:var(--panel);border:1.5px solid var(--line);border-top:4px solid var(--tc);border-radius:10px;padding:12px}
+.probs b{font:600 12px var(--mono);color:var(--tc)}
+.probs ul{margin:8px 0 0;padding-left:16px;font-size:14px;display:grid;gap:4px}
+@media (max-width:900px){.probs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.probs{grid-template-columns:minmax(0,1fr)}}
+footer{padding-block:30px 50px;color:var(--muted);font-size:13.5px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+
+
+<!-- shared arrowheads; colors follow theme tokens -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker>
+    <marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker>
+    <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--l1)"/></marker>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--l2)"/></marker>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--l3)"/></marker>
+    <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--l4)"/></marker>
+    <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--l5)"/></marker>
+  </defs>
+</svg>
+
+<header class="top wrap">
+  <p class="eyebrow">49 concepts · 51 diagrams · 31 links</p>
+  <h1>System design in five levels</h1>
+  <p class="lede">Each level adds a new problem. Each concept gets a few bullets and one diagram. Videos sit at the end of each level. Tick "Got it" to track progress. Ticks stay in this browser only.</p>
+  <nav class="levels" aria-label="Levels">
+    <a class="lvcard" href="#l1" style="--tc:var(--l1)"><span class="k">L1</span><b>Basics</b><span>One server, then a few. Problem: one box can't take the load.</span><span class="pg" data-pg="l1">0 / 10 done</span></a>
+    <a class="lvcard" href="#l2" style="--tc:var(--l2)"><span class="k">L2</span><b>Mid</b><span>Scale the data. Problem: the database is the bottleneck.</span><span class="pg" data-pg="l2">0 / 10 done</span></a>
+    <a class="lvcard" href="#l3" style="--tc:var(--l3)"><span class="k">L3</span><b>Advanced</b><span>Data systems inside out. Problem: copies disagree, writes get lost.</span><span class="pg" data-pg="l3">0 / 10 done</span></a>
+    <a class="lvcard" href="#l4" style="--tc:var(--l4)"><span class="k">L4</span><b>Expert</b><span>Distributed systems theory. Problem: clocks lie, nodes die mid-step.</span><span class="pg" data-pg="l4">0 / 9 done</span></a>
+    <a class="lvcard" href="#l5" style="--tc:var(--l5)"><span class="k">L5</span><b>Hardcore</b><span>Prove it is correct. Problem: bugs hide in rare event orders.</span><span class="pg" data-pg="l5">0 / 10 done</span></a>
+  </nav>
+</header>
+
+<div class="rail" aria-label="Jump to level">
+  <div class="wrap">
+    <a href="#l1" style="--tc:var(--l1);--tt:var(--l1t)"><i></i>L1 Basics</a>
+    <a href="#l2" style="--tc:var(--l2);--tt:var(--l2t)"><i></i>L2 Mid</a>
+    <a href="#l3" style="--tc:var(--l3);--tt:var(--l3t)"><i></i>L3 Advanced</a>
+    <a href="#l4" style="--tc:var(--l4);--tt:var(--l4t)"><i></i>L4 Expert</a>
+    <a href="#l5" style="--tc:var(--l5);--tt:var(--l5t)"><i></i>L5 Hardcore</a>
+    <a href="#practice" style="--tc:var(--muted);--tt:var(--soft)"><i></i>Practice</a>
+  </div>
+</div>
+
+<main class="wrap">
+<section class="map" aria-labelledby="map-h">
+  <h2 id="map-h">The whole map</h2>
+  <p>A typical web system. The tag on each part shows the level where you learn it. L5 is not a box: it is proof that all of this still works when any part fails.</p>
+  <figure style="margin-top:12px">
+  <div style="overflow-x:auto">
+  <svg viewBox="0 0 980 330" role="img" aria-label="Map of a web system: client, DNS, CDN, load balancer, app servers, cache, database leader, read replicas, shards, queue, workers and a second region, each tagged with a level from L1 to L4." style="min-width:680px;display:block;width:100%;height:auto;color:var(--ink)">
+    <!-- region A frame -->
+    <rect x="150" y="12" width="640" height="306" rx="12" class="sd" style="stroke:var(--muted)"/>
+    <text x="164" y="32" class="tm">region A</text>
+    <!-- boxes -->
+    <rect x="10" y="140" width="110" height="48" rx="8" class="b"/><text x="65" y="169" class="tb" text-anchor="middle">Client</text>
+    <rect x="10" y="50" width="110" height="44" rx="8" class="b"/><text x="65" y="77" class="t" text-anchor="middle">DNS</text>
+    <rect x="178" y="50" width="120" height="44" rx="8" class="b"/><text x="238" y="77" class="t" text-anchor="middle">CDN edge</text>
+    <rect x="178" y="140" width="120" height="48" rx="8" class="b"/><text x="238" y="169" class="t" text-anchor="middle">Load balancer</text>
+    <rect x="352" y="128" width="120" height="48" rx="8" class="b"/>
+    <rect x="346" y="134" width="120" height="48" rx="8" class="b"/>
+    <rect x="340" y="140" width="120" height="48" rx="8" class="b"/><text x="400" y="169" class="t" text-anchor="middle">App servers</text>
+    <rect x="510" y="50" width="120" height="44" rx="8" class="b"/><text x="570" y="77" class="t" text-anchor="middle">Cache</text>
+    <rect x="510" y="140" width="120" height="48" rx="8" class="b"/><text x="570" y="169" class="t" text-anchor="middle">DB leader</text>
+    <rect x="660" y="140" width="112" height="48" rx="8" class="b"/><text x="716" y="169" class="t" text-anchor="middle">Read replicas</text>
+    <rect x="510" y="250" width="120" height="44" rx="8" class="b"/><text x="570" y="277" class="t" text-anchor="middle">Queue / log</text>
+    <rect x="660" y="250" width="112" height="44" rx="8" class="b"/><text x="716" y="277" class="t" text-anchor="middle">Workers</text>
+    <rect x="820" y="100" width="150" height="130" rx="12" class="sd"/>
+    <text x="895" y="150" class="tb" text-anchor="middle">Region B</text>
+    <text x="895" y="170" class="tm" text-anchor="middle">full copy</text>
+    <text x="895" y="188" class="tm" text-anchor="middle">consensus</text>
+    <!-- arrows -->
+    <line x1="65" y1="140" x2="65" y2="98" class="s" marker-end="url(#ah)"/><text x="72" y="122" class="tm">lookup</text>
+    <path d="M120 152 L176 80" class="s" marker-end="url(#ah)"/><text x="146" y="114" class="tm" text-anchor="end">files</text>
+    <line x1="120" y1="164" x2="174" y2="164" class="s" marker-end="url(#ah)"/><text x="126" y="180" class="tm">API</text>
+    <line x1="298" y1="164" x2="336" y2="164" class="s" marker-end="url(#ah)"/>
+    <path d="M440 140 L508 82" class="s" marker-end="url(#ah)"/><text x="470" y="106" class="tm" text-anchor="end">1 read</text>
+    <line x1="460" y1="164" x2="506" y2="164" class="s" marker-end="url(#ah)"/><text x="468" y="157" class="tm">2 miss</text>
+    <line x1="630" y1="164" x2="656" y2="164" class="s" marker-end="url(#ah)"/>
+    <text x="640" y="208" class="tm">copies</text>
+    <path d="M420 188 L508 262" class="s" marker-end="url(#ah)"/><text x="462" y="244" class="tm" text-anchor="end">enqueue</text>
+    <line x1="630" y1="272" x2="656" y2="272" class="s" marker-end="url(#ah)"/>
+    <line x1="772" y1="164" x2="816" y2="164" class="sd" marker-end="url(#ah)"/><text x="776" y="156" class="tm">replicate</text>
+    <!-- level badges -->
+    <g style="--tc:var(--l1)"><rect x="96" y="132" width="30" height="18" rx="9" class="fa"/><text x="111" y="145" class="tw" text-anchor="middle">L1</text></g>
+    <g style="--tc:var(--l1)"><rect x="96" y="42" width="30" height="18" rx="9" class="fa"/><text x="111" y="55" class="tw" text-anchor="middle">L1</text></g>
+    <g style="--tc:var(--l1)"><rect x="274" y="42" width="30" height="18" rx="9" class="fa"/><text x="289" y="55" class="tw" text-anchor="middle">L1</text></g>
+    <g style="--tc:var(--l1)"><rect x="274" y="132" width="30" height="18" rx="9" class="fa"/><text x="289" y="145" class="tw" text-anchor="middle">L1</text></g>
+    <g style="--tc:var(--l1)"><rect x="448" y="120" width="30" height="18" rx="9" class="fa"/><text x="463" y="133" class="tw" text-anchor="middle">L1</text></g>
+    <g style="--tc:var(--l1)"><rect x="606" y="42" width="30" height="18" rx="9" class="fa"/><text x="621" y="55" class="tw" text-anchor="middle">L1</text></g>
+    <g style="--tc:var(--l2)"><rect x="606" y="132" width="30" height="18" rx="9" class="fa"/><text x="621" y="145" class="tw" text-anchor="middle">L2</text></g>
+    <g style="--tc:var(--l2)"><rect x="748" y="132" width="30" height="18" rx="9" class="fa"/><text x="763" y="145" class="tw" text-anchor="middle">L2</text></g>
+    <g style="--tc:var(--l2)"><rect x="606" y="242" width="30" height="18" rx="9" class="fa"/><text x="621" y="255" class="tw" text-anchor="middle">L2</text></g>
+    <g style="--tc:var(--l3)"><rect x="748" y="242" width="30" height="18" rx="9" class="fa"/><text x="763" y="255" class="tw" text-anchor="middle">L3</text></g>
+    <g style="--tc:var(--l4)"><rect x="946" y="92" width="30" height="18" rx="9" class="fa"/><text x="961" y="105" class="tw" text-anchor="middle">L4</text></g>
+    <text x="570" y="212" class="tm" text-anchor="middle">shards: L2</text>
+  </svg>
+  </div>
+  </figure>
+</section>
+
+<!-- ============ L1 ============ -->
+<section class="level" id="l1" style="--tc:var(--l1);--tt:var(--l1t)">
+  <div class="lv-head">
+    <span class="lv-tag">L1</span>
+    <div><h2>Basics</h2><p class="lv-sub">One server, then a few. <b>New problem:</b> one machine can't handle the traffic.</p></div>
+    <span class="lv-count" data-count="l1">0 / 10 done</span>
+  </div>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>What system design is</h3><label class="got"><input type="checkbox" id="k-l1-what"><span>Got it</span></label></div>
+      <ul>
+        <li>You turn a fuzzy goal into parts (boxes) and data paths (arrows).</li>
+        <li><b>Functional</b> needs: what it does. "Users post photos."</li>
+        <li><b>Non-functional</b> needs: how well. Latency, uptime, scale, cost.</li>
+        <li>No design is "right". Every choice trades one thing for another.</li>
+      </ul>
+      <span class="key">Rule: say the trade-off out loud.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  A["Requirements"] --> B["Constraints: users, data, latency"]
+  B --> C["High-level design"]
+  C --> D["Deep dive on bottlenecks"]
+      D --> E["Trade-offs"]
+  E -.->|"new info"| A
+      </pre></div>
+      <figcaption>The design loop. You repeat it every time a number changes.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Life of a request</h3><label class="got"><input type="checkbox" id="k-l1-req"><span>Got it</span></label></div>
+      <ul>
+        <li><b>DNS</b> turns a name into an IP address.</li>
+        <li><b>TCP + TLS</b> open a safe connection. This costs round trips.</li>
+        <li><b>HTTP</b> carries the request. The server answers with a status code.</li>
+        <li>The server usually calls a database before it answers.</li>
+      </ul>
+      <span class="key">Every arrow here adds latency.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant B as Browser
+  participant D as DNS
+  participant S as Server
+  participant DB as Database
+  B->>D: Where is shop.com?
+  D-->>B: 203.0.113.7
+  B->>S: TCP + TLS handshake
+  B->>S: GET /cart
+  S->>DB: SELECT items
+  DB-->>S: rows
+  S-->>B: 200 OK + JSON
+      </pre></div>
+      <figcaption>One page load. Caches can skip the DNS step and the database step.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Latency numbers</h3><label class="got"><input type="checkbox" id="k-l1-lat"><span>Got it</span></label></div>
+      <ul>
+        <li>Memory is about 1,000× faster than SSD.</li>
+        <li>A round trip inside one data center is cheap. A trip across an ocean is not.</li>
+        <li>Most design moves exist to swap a slow step for a fast one.</li>
+      </ul>
+      <span class="key">Cache in RAM. Keep data close to users.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 318" role="img" aria-label="Log-scale latency chart: L1 cache 1 nanosecond, RAM 100 nanoseconds, SSD read 100 microseconds, data center round trip 500 microseconds, disk seek 10 milliseconds, US to Europe round trip 150 milliseconds.">
+        <g class="sm" style="stroke-dasharray:2 4">
+          <line x1="212" y1="14" x2="212" y2="284"/><line x1="323" y1="14" x2="323" y2="284"/><line x1="434" y1="14" x2="434" y2="284"/><line x1="545" y1="14" x2="545" y2="284"/>
+        </g>
+        <line x1="175" y1="284" x2="545" y2="284" class="s"/>
+        <text x="212" y="302" class="tm" text-anchor="middle">1 ns</text><text x="323" y="302" class="tm" text-anchor="middle">1 µs</text><text x="434" y="302" class="tm" text-anchor="middle">1 ms</text><text x="545" y="302" class="tm" text-anchor="end">1 s</text>
+        <text x="165" y="32" class="tb" text-anchor="end">L1 cache read</text><text x="165" y="47" class="tm" text-anchor="end">1 ns · like 1 s</text><rect x="175" y="22" width="37" height="24" rx="3" class="fa"/>
+        <text x="165" y="76" class="tb" text-anchor="end">RAM read</text><text x="165" y="91" class="tm" text-anchor="end">100 ns · 1.7 min</text><rect x="175" y="66" width="111" height="24" rx="3" class="fa"/>
+        <text x="165" y="120" class="tb" text-anchor="end">SSD random read</text><text x="165" y="135" class="tm" text-anchor="end">100 µs · 1.2 days</text><rect x="175" y="110" width="222" height="24" rx="3" class="fa"/>
+        <text x="165" y="164" class="tb" text-anchor="end">Same-DC round trip</text><text x="165" y="179" class="tm" text-anchor="end">500 µs · 6 days</text><rect x="175" y="154" width="248" height="24" rx="3" class="fa"/>
+        <text x="165" y="208" class="tb" text-anchor="end">HDD seek</text><text x="165" y="223" class="tm" text-anchor="end">10 ms · 4 months</text><rect x="175" y="198" width="296" height="24" rx="3" class="fa"/>
+        <text x="165" y="252" class="tb" text-anchor="end">US ↔ Europe trip</text><text x="165" y="267" class="tm" text-anchor="end">150 ms · 5 years</text><rect x="175" y="242" width="340" height="24" rx="3" class="fa"/>
+      </svg>
+      </div>
+      <figcaption>Log scale: each grid step is 1,000×. The second label scales time by one billion: if an L1 read took 1 second, a US–Europe trip would take 5 years. Values are rough.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Back-of-envelope math</h3><label class="got"><input type="checkbox" id="k-l1-math"><span>Got it</span></label></div>
+      <ul>
+        <li>Estimate load before you pick parts.</li>
+        <li>Round hard. 86,400 seconds a day ≈ 100k.</li>
+        <li>Peak traffic is often 2–5× the average.</li>
+      </ul>
+      <div class="calc">10M users × 10 req   = 100M req/day
+100M ÷ 100k s        = ~1,000 req/s avg
+peak ≈ 3 × avg       = ~3,000 req/s
+1 KB × 100M          = 100 GB/day stored
+100 GB × 365         = ~36 TB/year</div>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  A["10M daily users"] -->|"x 10 requests"| B["100M per day"]
+  B -->|"divide by 100k s"| C["1,000 per second"]
+  C -->|"x 3 at peak"| D["3,000 per second"]
+  B -->|"x 1 KB"| E["100 GB per day"]
+      </pre></div>
+      <figcaption>Two numbers drive most designs: requests per second and bytes stored.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Vertical vs horizontal scaling</h3><label class="got"><input type="checkbox" id="k-l1-scale"><span>Got it</span></label></div>
+      <ul>
+        <li><b>Vertical:</b> buy a bigger machine. Simple. Has a ceiling. One failure takes all.</li>
+        <li><b>Horizontal:</b> add more machines. No ceiling. Needs a load balancer.</li>
+        <li>Horizontal works best when servers are <b>stateless</b>. Keep sessions in a shared store.</li>
+      </ul>
+      <span class="key">Stateless app servers + shared state store.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 230" role="img" aria-label="Left: all users go to one big server. Right: users go to a load balancer that spreads traffic across three small servers.">
+        <line x1="280" y1="10" x2="280" y2="220" class="sm" style="stroke-dasharray:3 4"/>
+        <text x="140" y="24" class="ta" text-anchor="middle">VERTICAL</text>
+        <text x="420" y="24" class="ta" text-anchor="middle">HORIZONTAL</text>
+        <rect x="90" y="42" width="100" height="32" rx="6" class="b"/><text x="140" y="63" class="t" text-anchor="middle">Users</text>
+        <line x1="140" y1="74" x2="140" y2="100" class="s" marker-end="url(#ah)"/>
+        <rect x="70" y="104" width="140" height="96" rx="8" class="ba"/>
+        <text x="140" y="146" class="tb" text-anchor="middle">1 huge server</text>
+        <text x="140" y="164" class="tm" text-anchor="middle">64 cores · 1 TB RAM</text>
+        <text x="140" y="216" class="tm" text-anchor="middle">dies = site down</text>
+        <rect x="370" y="42" width="100" height="32" rx="6" class="b"/><text x="420" y="63" class="t" text-anchor="middle">Users</text>
+        <line x1="420" y1="74" x2="420" y2="96" class="s" marker-end="url(#ah)"/>
+        <rect x="355" y="100" width="130" height="30" rx="15" class="ba"/><text x="420" y="120" class="t" text-anchor="middle">Load balancer</text>
+        <line x1="390" y1="130" x2="336" y2="160" class="s" marker-end="url(#ah)"/>
+        <line x1="420" y1="130" x2="420" y2="160" class="s" marker-end="url(#ah)"/>
+        <line x1="450" y1="130" x2="504" y2="160" class="s" marker-end="url(#ah)"/>
+        <rect x="300" y="164" width="72" height="36" rx="6" class="b"/><text x="336" y="187" class="t" text-anchor="middle">small</text>
+        <rect x="384" y="164" width="72" height="36" rx="6" class="b"/><text x="420" y="187" class="t" text-anchor="middle">small</text>
+        <rect x="468" y="164" width="72" height="36" rx="6" class="b"/><text x="504" y="187" class="t" text-anchor="middle">small</text>
+        <text x="420" y="216" class="tm" text-anchor="middle">1 dies = 2/3 capacity left</text>
+      </svg>
+      </div>
+      <figcaption>Same traffic, two shapes. Horizontal survives a dead machine.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Load balancer</h3><label class="got"><input type="checkbox" id="k-l1-lb"><span>Got it</span></label></div>
+      <ul>
+        <li>Spreads requests across servers.</li>
+        <li><b>Algorithms:</b> round robin, least connections, hash by user or IP.</li>
+        <li><b>Health checks</b> remove dead servers from the pool.</li>
+        <li><b>L4</b> routes by IP and port. <b>L7</b> reads HTTP and routes by path or header.</li>
+        <li>Run two balancers, or the balancer becomes the new single point of failure.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  U["Users"] --> LB(["Load balancer"])
+  LB -->|"req 1, 3, 5"| S1["Server 1"]
+  LB -->|"req 2, 4, 6"| S2["Server 2"]
+  LB -.->|"no traffic: failed health check"| S3["Server 3 down"]
+      </pre></div>
+      <figcaption>Round robin over the healthy servers. Server 3 gets nothing until it passes checks again.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Caching</h3><label class="got"><input type="checkbox" id="k-l1-cache"><span>Got it</span></label></div>
+      <ul>
+        <li>Keep hot data in RAM (Redis, Memcached). Skip the slow database.</li>
+        <li><b>Cache-aside:</b> app checks cache, then DB on a miss, then fills the cache.</li>
+        <li><b>TTL</b> expires old entries. <b>LRU</b> evicts the least recently used when full.</li>
+        <li>Hard part: stale data. When the DB changes, delete or update the cache entry.</li>
+      </ul>
+      <span class="key">Hit rate is the number that matters.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart TD
+  R["Request"] --> Q{"In cache?"}
+  Q -->|"hit, about 1 ms"| H["Return cached value"]
+  Q -->|"miss"| DB["Read DB, about 10 ms"]
+  DB --> W["Store in cache with TTL"]
+  W --> H2["Return value"]
+      </pre></div>
+      <figcaption>Cache-aside read path. A 90% hit rate removes 90% of database reads.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>CDN</h3><label class="got"><input type="checkbox" id="k-l1-cdn"><span>Got it</span></label></div>
+      <ul>
+        <li>A CDN is a cache for files, placed in many cities.</li>
+        <li>Images, video, JS and CSS load from the nearest edge.</li>
+        <li>The edge calls your origin server only on a miss.</li>
+        <li>Result: lower latency and much less load on your servers.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  U1["User in Tokyo"] -->|"20 ms"| E1["Edge Tokyo"]
+  U2["User in Paris"] -->|"15 ms"| E2["Edge Paris"]
+  E1 -.->|"miss only"| O["Origin in Virginia"]
+  E2 -.->|"miss only"| O
+      </pre></div>
+      <figcaption>Most requests stop at the edge. Dashed arrows are rare.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>SQL vs NoSQL</h3><label class="got"><input type="checkbox" id="k-l1-db"><span>Got it</span></label></div>
+      <ul>
+        <li><b>SQL:</b> tables, joins, ACID transactions. Postgres, MySQL.</li>
+        <li><b>NoSQL:</b> key-value, document, wide-column, graph. Built for one access pattern at large scale.</li>
+        <li>Pick by access pattern, not by hype.</li>
+      </ul>
+      <span class="key">Default: Postgres. Switch only for a clear reason.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart TD
+  A{"Need joins and multi-row transactions?"} -->|"yes"| SQL["Relational: Postgres, MySQL"]
+  A -->|"no"| B{"Main access pattern?"}
+  B -->|"get by key"| KV["Key-value: Redis, DynamoDB"]
+  B -->|"nested documents"| DOC["Document: MongoDB"]
+  B -->|"huge write volume"| WC["Wide-column: Cassandra"]
+  B -->|"links between items"| G["Graph: Neo4j"]
+      </pre></div>
+      <figcaption>A rough decision tree. Real choices also weigh team skills and operations cost.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>APIs and real-time</h3><label class="got"><input type="checkbox" id="k-l1-api"><span>Got it</span></label></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Style</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td><b>REST</b></td><td>Public APIs. Resources + HTTP verbs.</td></tr>
+          <tr><td><b>GraphQL</b></td><td>Clients that pick exact fields.</td></tr>
+          <tr><td><b>gRPC</b></td><td>Fast service-to-service calls.</td></tr>
+          <tr><td><b>WebSocket</b></td><td>Chat, games, live updates.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant C as Client
+  participant S as Server
+  Note over C,S: Polling wastes requests
+  C->>S: Any news?
+  S-->>C: No
+  C->>S: Any news?
+  S-->>C: Yes, 1 message
+  Note over C,S: WebSocket pushes
+  C->>S: Upgrade to WebSocket
+  S-->>C: 101 Switching Protocols
+  S-->>C: new message
+  S-->>C: new message
+      </pre></div>
+      <figcaption>Polling asks again and again. A WebSocket keeps one connection open and the server pushes.</figcaption>
+    </figure>
+  </article>
+
+  <div class="watch">
+    <h3>Watch · L1</h3>
+    <ul>
+      <li><a href="https://www.youtube.com/watch?v=F2FmTdLtb_4" target="_blank" rel="noopener"><span class="who">freeCodeCamp</span><span class="what">System Design Concepts Course and Interview Prep<small>Full beginner course by Hayk Simonyan. Start here.</small></span><span class="kind">course</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=tIgNvmRO3e0" target="_blank" rel="noopener"><span class="who">Hayk Simonyan</span><span class="what">System Design Interview Concepts [Full Tutorial]<small>Same core ideas, different examples.</small></span><span class="kind">video</span></a></li>
+      <li><a href="https://www.youtube.com/playlist?list=PLMCXHnjXnTnvo6alSjVkgxV-VH6EPyvoX" target="_blank" rel="noopener"><span class="who">Gaurav Sen</span><span class="what">System Design playlist<small>Short whiteboard videos. Load balancing, caching, messaging.</small></span><span class="kind">playlist</span></a></li>
+      <li><a href="https://www.youtube.com/@ByteByteGo" target="_blank" rel="noopener"><span class="who">ByteByteGo</span><span class="what">Channel<small>Animated 5–10 minute explainers for almost every L1 and L2 topic.</small></span><span class="kind">channel</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ L2 ============ -->
+<section class="level" id="l2" style="--tc:var(--l2);--tt:var(--l2t)">
+  <div class="lv-head">
+    <span class="lv-tag">L2</span>
+    <div><h2>Mid</h2><p class="lv-sub">Scale the data, not only the servers. <b>New problem:</b> the database is now the bottleneck.</p></div>
+    <span class="lv-count" data-count="l2">0 / 10 done</span>
+  </div>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Replication</h3><label class="got"><input type="checkbox" id="k-l2-repl"><span>Got it</span></label></div>
+      <ul>
+        <li>Keep copies of the same data on several machines.</li>
+        <li><b>Leader–follower:</b> writes go to the leader. Followers copy it and serve reads.</li>
+        <li><b>Replication lag:</b> a follower can be behind. You may read old data.</li>
+        <li><b>Failover:</b> if the leader dies, promote a follower.</li>
+      </ul>
+      <span class="key">Scales reads. Does not scale writes.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 240" role="img" aria-label="App sends writes to the leader and reads to followers. The leader copies data to two followers asynchronously, with lag.">
+        <rect x="16" y="96" width="96" height="44" rx="8" class="b"/><text x="64" y="123" class="tb" text-anchor="middle">App</text>
+        <rect x="220" y="18" width="150" height="50" rx="8" class="ba"/><text x="295" y="40" class="tb" text-anchor="middle">Leader</text><text x="295" y="57" class="tm" text-anchor="middle">takes all writes</text>
+        <rect x="160" y="176" width="130" height="44" rx="8" class="b"/><text x="225" y="203" class="t" text-anchor="middle">Follower 1</text>
+        <rect x="330" y="176" width="130" height="44" rx="8" class="b"/><text x="395" y="203" class="t" text-anchor="middle">Follower 2</text>
+        <line x1="112" y1="104" x2="216" y2="52" class="sa" marker-end="url(#a2)"/><text x="138" y="66" class="ta">writes</text>
+        <line x1="112" y1="132" x2="156" y2="186" class="s" marker-end="url(#ah)"/><text x="104" y="172" class="tm" text-anchor="end">reads</text>
+        <line x1="270" y1="68" x2="236" y2="172" class="sd" marker-end="url(#ah)"/>
+        <line x1="320" y1="68" x2="384" y2="172" class="sd" marker-end="url(#ah)"/>
+        <text x="372" y="118" class="t">async copy</text><text x="372" y="134" class="tm">lag: ms to seconds</text>
+      </svg>
+      </div>
+      <figcaption>Writes take one path, reads another. A read right after a write can hit a follower that has not caught up.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Sharding</h3><label class="got"><input type="checkbox" id="k-l2-shard"><span>Got it</span></label></div>
+      <ul>
+        <li>Split data across machines. Each shard holds a slice.</li>
+        <li><b>Hash sharding:</b> even spread. Range queries get hard.</li>
+        <li><b>Range sharding:</b> easy ranges. Risk of hot shards.</li>
+        <li><b>Hot key:</b> one celebrity account can overload one shard.</li>
+        <li>Cross-shard joins and transactions get slow. Pick the shard key with care.</li>
+      </ul>
+      <span class="key">Scales writes. Costs joins.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 236" role="img" aria-label="A user id is hashed, taken modulo 4, and routed to shard 1 of 4 shards.">
+        <rect x="20" y="24" width="150" height="40" rx="8" class="b"/><text x="95" y="49" class="t" text-anchor="middle">user_id 4217</text>
+        <line x1="170" y1="44" x2="226" y2="44" class="s" marker-end="url(#ah)"/>
+        <rect x="230" y="24" width="190" height="40" rx="8" class="bs"/><text x="325" y="49" class="tm" text-anchor="middle" style="font-size:13px">hash(id) mod 4 = 1</text>
+        <line x1="300" y1="64" x2="222" y2="134" class="sa" marker-end="url(#a2)"/><text x="268" y="106" class="ta">route</text>
+        <rect x="15" y="138" width="110" height="56" rx="8" class="b"/><text x="70" y="162" class="t" text-anchor="middle">Shard 0</text><text x="70" y="180" class="tm" text-anchor="middle">¼ of users</text>
+        <rect x="155" y="138" width="110" height="56" rx="8" class="ba"/><text x="210" y="162" class="tb" text-anchor="middle">Shard 1</text><text x="210" y="180" class="tm" text-anchor="middle">¼ of users</text>
+        <rect x="295" y="138" width="110" height="56" rx="8" class="b"/><text x="350" y="162" class="t" text-anchor="middle">Shard 2</text><text x="350" y="180" class="tm" text-anchor="middle">¼ of users</text>
+        <rect x="435" y="138" width="110" height="56" rx="8" class="b"/><text x="490" y="162" class="t" text-anchor="middle">Shard 3</text><text x="490" y="180" class="tm" text-anchor="middle">¼ of users</text>
+        <text x="280" y="222" class="tm" text-anchor="middle">change to mod 5 and about 80% of keys move</text>
+      </svg>
+      </div>
+      <figcaption>Simple hash routing. The weak spot is resizing: mod N moves most keys when N changes. The next concept fixes that.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Consistent hashing</h3><label class="got"><input type="checkbox" id="k-l2-ch"><span>Got it</span></label></div>
+      <ul>
+        <li>Put nodes and keys on one ring.</li>
+        <li>A key belongs to the next node clockwise.</li>
+        <li>Add or remove a node: only its neighbor's keys move. About 1/N of keys.</li>
+        <li><b>Virtual nodes:</b> each server takes many ring spots. Load evens out.</li>
+        <li>Used in DynamoDB, Cassandra, CDNs, cache clusters.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 290" role="img" aria-label="Two hash rings. Before: nodes A, B, C own keys k1, k2, k3. After adding node D, only key k1 moves, from B to D.">
+        <text x="140" y="22" class="ta" text-anchor="middle">BEFORE · 3 nodes</text>
+        <text x="420" y="22" class="ta" text-anchor="middle">AFTER · add D</text>
+        <circle cx="140" cy="150" r="90" class="s"/>
+        <circle cx="420" cy="150" r="90" class="s"/>
+        <!-- left keys -->
+        <circle cx="218" cy="105" r="5" class="fi"/><text x="230" y="97" class="tm">k1→B</text>
+        <circle cx="140" cy="240" r="5" class="fi"/><text x="140" y="262" class="tm" text-anchor="middle">k2→C</text>
+        <circle cx="62" cy="105" r="5" class="fi"/><text x="50" y="97" class="tm" text-anchor="end">k3→A</text>
+        <!-- left nodes -->
+        <circle cx="140" cy="60" r="15" class="b"/><text x="140" y="65" class="tb" text-anchor="middle">A</text>
+        <circle cx="218" cy="195" r="15" class="b"/><text x="218" y="200" class="tb" text-anchor="middle">B</text>
+        <circle cx="62" cy="195" r="15" class="b"/><text x="62" y="200" class="tb" text-anchor="middle">C</text>
+        <!-- right keys -->
+        <circle cx="498" cy="105" r="6" class="fa"/><text x="506" y="92" class="ta">k1→D</text>
+        <circle cx="420" cy="240" r="5" class="fi"/><text x="420" y="262" class="tm" text-anchor="middle">k2→C</text>
+        <circle cx="342" cy="105" r="5" class="fi"/><text x="330" y="97" class="tm" text-anchor="end">k3→A</text>
+        <!-- right nodes -->
+        <circle cx="420" cy="60" r="15" class="b"/><text x="420" y="65" class="tb" text-anchor="middle">A</text>
+        <circle cx="498" cy="195" r="15" class="b"/><text x="498" y="200" class="tb" text-anchor="middle">B</text>
+        <circle cx="342" cy="195" r="15" class="b"/><text x="342" y="200" class="tb" text-anchor="middle">C</text>
+        <circle cx="510" cy="150" r="15" class="ba"/><text x="510" y="155" class="tb" text-anchor="middle">D</text>
+        <text x="280" y="284" class="tm" text-anchor="middle">each key goes clockwise to the next node</text>
+      </svg>
+      </div>
+      <figcaption>Adding D moves only k1. With plain mod-N hashing, most keys would move.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>CAP theorem</h3><label class="got"><input type="checkbox" id="k-l2-cap"><span>Got it</span></label></div>
+      <ul>
+        <li>Networks split. When they do, a node must choose.</li>
+        <li><b>CP:</b> refuse to answer. Never wrong, sometimes down.</li>
+        <li><b>AP:</b> answer with what it has. Always up, sometimes stale.</li>
+        <li><b>PACELC:</b> with no split, you still trade latency (L) for consistency (C).</li>
+      </ul>
+      <span class="key">Banks lean CP. Like counters lean AP.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 246" role="img" aria-label="A network split separates node 1, which has x equals 2, from node 2, which has old x equals 1. A read on node 2 must either fail (CP) or return stale data (AP).">
+        <rect x="60" y="10" width="120" height="30" rx="6" class="b"/><text x="120" y="30" class="t" text-anchor="middle">Client A</text>
+        <rect x="380" y="10" width="120" height="30" rx="6" class="b"/><text x="440" y="30" class="t" text-anchor="middle">Client B</text>
+        <line x1="120" y1="40" x2="120" y2="76" class="s" marker-end="url(#ah)"/><text x="128" y="62" class="tm">write x=2</text>
+        <line x1="440" y1="40" x2="440" y2="76" class="s" marker-end="url(#ah)"/><text x="448" y="62" class="tm">read x</text>
+        <rect x="60" y="80" width="120" height="50" rx="8" class="b"/><text x="120" y="101" class="tb" text-anchor="middle">Node 1</text><text x="120" y="119" class="tm" text-anchor="middle">x = 2</text>
+        <rect x="380" y="80" width="120" height="50" rx="8" class="b"/><text x="440" y="101" class="tb" text-anchor="middle">Node 2</text><text x="440" y="119" class="tm" text-anchor="middle">x = 1 (old)</text>
+        <line x1="180" y1="105" x2="262" y2="105" class="s"/><line x1="298" y1="105" x2="380" y2="105" class="s"/>
+        <text x="280" y="112" class="ta" text-anchor="middle" style="font-size:20px">✕</text>
+        <text x="280" y="134" class="tm" text-anchor="middle">network split</text>
+        <line x1="410" y1="130" x2="200" y2="168" class="sm" marker-end="url(#am)"/>
+        <line x1="450" y1="130" x2="420" y2="168" class="sm" marker-end="url(#am)"/>
+        <rect x="30" y="172" width="240" height="58" rx="8" class="b"/><text x="150" y="196" class="tb" text-anchor="middle">CP: refuse</text><text x="150" y="215" class="tm" text-anchor="middle">error, but never stale</text>
+        <rect x="290" y="172" width="240" height="58" rx="8" class="ba"/><text x="410" y="196" class="tb" text-anchor="middle">AP: answer</text><text x="410" y="215" class="tm" text-anchor="middle">x = 1, stale but up</text>
+      </svg>
+      </div>
+      <figcaption>CAP in one picture. During a split, Node 2 cannot see the new value, so it picks an error or an old answer.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Message queues</h3><label class="got"><input type="checkbox" id="k-l2-mq"><span>Got it</span></label></div>
+      <ul>
+        <li>Producers drop jobs in a queue. Workers pull them later.</li>
+        <li>Absorbs traffic spikes. The web request returns fast.</li>
+        <li>Decouples services. A slow worker does not block users.</li>
+        <li>Failed jobs retry, then go to a <b>dead-letter queue</b>.</li>
+        <li>Tools: SQS, RabbitMQ, Kafka.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  P1["Web app"] -->|"publish job"| Q[("Queue")]
+  P2["Mobile API"] -->|"publish job"| Q
+  Q -->|"pull"| C1["Worker 1"]
+  Q -->|"pull"| C2["Worker 2"]
+  C1 -.->|"fails 3 times"| DLQ[("Dead-letter queue")]
+      </pre></div>
+      <figcaption>Upload a video: the API queues "make thumbnails" and answers at once. Workers do the slow part.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Cache write strategies</h3><label class="got"><input type="checkbox" id="k-l2-cw"><span>Got it</span></label></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Strategy</th><th>On write</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr><td><b>Cache-aside</b></td><td>Write DB, delete key</td><td>Short stale window</td></tr>
+          <tr><td><b>Write-through</b></td><td>Write cache and DB</td><td>Slower writes</td></tr>
+          <tr><td><b>Write-back</b></td><td>Write cache, flush later</td><td>Loss if cache dies</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Stampede:</b> a hot key expires and thousands of requests hit the DB at once. Fix it with a lock, early refresh, or random TTLs.</p>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant U as Many requests
+  participant C as Cache
+  participant D as Database
+  Note over C: hot key expires
+  U->>C: get key
+  C-->>U: miss
+  U->>D: same query, 5000 times
+  Note over U,D: Fix: one request rebuilds the key, the rest wait
+      </pre></div>
+      <figcaption>The cache stampede. One expiry turns into a database overload.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Rate limiting</h3><label class="got"><input type="checkbox" id="k-l2-rl"><span>Got it</span></label></div>
+      <ul>
+        <li>Caps requests per user, IP or API key.</li>
+        <li><b>Token bucket:</b> tokens refill at a fixed rate. Each request takes one. Empty bucket means HTTP 429.</li>
+        <li>Bucket size sets the allowed burst.</li>
+        <li>Other options: fixed window, sliding window log, leaky bucket.</li>
+        <li>Shared limits across servers need a shared counter, often Redis.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 230" role="img" aria-label="Token bucket: refills 10 tokens per second, holds at most 20. Each request takes one token. With a token the request passes, with none it gets HTTP 429.">
+        <line x1="280" y1="12" x2="280" y2="62" class="sa" marker-end="url(#a2)"/><text x="292" y="38" class="ta">refill 10 / s</text>
+        <path d="M210 70 L222 190 L338 190 L350 70" class="s" style="stroke-width:2.4"/>
+        <g class="fa"><circle cx="246" cy="174" r="9"/><circle cx="268" cy="174" r="9"/><circle cx="290" cy="174" r="9"/><circle cx="312" cy="174" r="9"/><circle cx="257" cy="154" r="9"/><circle cx="279" cy="154" r="9"/><circle cx="301" cy="154" r="9"/></g>
+        <text x="280" y="212" class="tm" text-anchor="middle">holds max 20 = burst size</text>
+        <rect x="20" y="110" width="110" height="40" rx="8" class="b"/><text x="75" y="135" class="t" text-anchor="middle">Requests</text>
+        <line x1="130" y1="130" x2="212" y2="130" class="s" marker-end="url(#ah)"/><text x="140" y="122" class="tm">take 1</text>
+        <line x1="346" y1="104" x2="396" y2="96" class="s" marker-end="url(#ah)"/>
+        <line x1="342" y1="150" x2="396" y2="168" class="s" marker-end="url(#ah)"/>
+        <rect x="400" y="76" width="140" height="40" rx="8" class="ba"/><text x="470" y="101" class="t" text-anchor="middle">token: allow</text>
+        <rect x="400" y="150" width="140" height="40" rx="8" class="b"/><text x="470" y="175" class="t" text-anchor="middle">empty: 429</text>
+      </svg>
+      </div>
+      <figcaption>Token bucket. A user can burst 20 requests, then gets 10 per second.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Indexes</h3><label class="got"><input type="checkbox" id="k-l2-idx"><span>Got it</span></label></div>
+      <ul>
+        <li>No index: the DB scans every row. 10M rows = slow.</li>
+        <li>B-tree index: 3–4 page reads find one row.</li>
+        <li>Each index speeds reads but slows writes and uses disk.</li>
+        <li>Composite index (a, b) helps queries on a, or a + b. Not b alone.</li>
+      </ul>
+      <span class="key">Index the columns in your WHERE and ORDER BY.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart TD
+  Q["WHERE email = 'ana@example.com'"] --> R["Root page: a-m / n-z"]
+  R --> I["Inner page: a-f / g-m"]
+  I --> L["Leaf: ana@example.com points to row 88123"]
+  L --> T["Row 88123 on disk"]
+      </pre></div>
+      <figcaption>A B-tree lookup walks a few pages from root to leaf instead of reading the whole table.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Monolith vs microservices</h3><label class="got"><input type="checkbox" id="k-l2-ms"><span>Got it</span></label></div>
+      <ul>
+        <li><b>Monolith:</b> one codebase, one deploy. Fast to start.</li>
+        <li><b>Microservices:</b> small services, each with its own data. Teams ship alone.</li>
+        <li>Cost: network calls, partial failures, harder debugging.</li>
+        <li>An <b>API gateway</b> handles auth, routing and rate limits at the front door.</li>
+      </ul>
+      <span class="key">Start with a monolith. Split when teams block each other.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 252" role="img" aria-label="Left: a monolith holds users, orders and pay modules over one database. Right: an API gateway routes to three services, each with its own database.">
+        <line x1="270" y1="8" x2="270" y2="244" class="sm" style="stroke-dasharray:3 4"/>
+        <rect x="20" y="40" width="220" height="120" rx="10" class="bs"/><text x="130" y="62" class="tb" text-anchor="middle">Monolith</text>
+        <rect x="32" y="80" width="62" height="40" rx="6" class="b"/><text x="63" y="105" class="t" text-anchor="middle">Users</text>
+        <rect x="99" y="80" width="62" height="40" rx="6" class="b"/><text x="130" y="105" class="t" text-anchor="middle">Orders</text>
+        <rect x="166" y="80" width="62" height="40" rx="6" class="b"/><text x="197" y="105" class="t" text-anchor="middle">Pay</text>
+        <text x="130" y="146" class="tm" text-anchor="middle">function calls</text>
+        <line x1="130" y1="160" x2="130" y2="186" class="s" marker-end="url(#ah)"/>
+        <rect x="80" y="190" width="100" height="36" rx="18" class="b"/><text x="130" y="213" class="t" text-anchor="middle">1 DB</text>
+        <rect x="330" y="10" width="180" height="34" rx="8" class="ba"/><text x="420" y="32" class="tb" text-anchor="middle">API gateway</text>
+        <line x1="380" y1="44" x2="338" y2="88" class="s" marker-end="url(#ah)"/>
+        <line x1="420" y1="44" x2="420" y2="88" class="s" marker-end="url(#ah)"/>
+        <line x1="460" y1="44" x2="502" y2="88" class="s" marker-end="url(#ah)"/>
+        <rect x="300" y="92" width="72" height="40" rx="6" class="b"/><text x="336" y="117" class="t" text-anchor="middle">Users</text>
+        <rect x="384" y="92" width="72" height="40" rx="6" class="b"/><text x="420" y="117" class="t" text-anchor="middle">Orders</text>
+        <rect x="468" y="92" width="72" height="40" rx="6" class="b"/><text x="504" y="117" class="t" text-anchor="middle">Pay</text>
+        <text x="420" y="152" class="tm" text-anchor="middle">network calls</text>
+        <line x1="336" y1="132" x2="336" y2="186" class="s" marker-end="url(#ah)"/>
+        <line x1="420" y1="160" x2="420" y2="186" class="s" marker-end="url(#ah)"/>
+        <line x1="504" y1="132" x2="504" y2="186" class="s" marker-end="url(#ah)"/>
+        <rect x="306" y="190" width="60" height="36" rx="18" class="b"/><text x="336" y="213" class="t" text-anchor="middle">DB</text>
+        <rect x="390" y="190" width="60" height="36" rx="18" class="b"/><text x="420" y="213" class="t" text-anchor="middle">DB</text>
+        <rect x="474" y="190" width="60" height="36" rx="18" class="b"/><text x="504" y="213" class="t" text-anchor="middle">DB</text>
+        <text x="130" y="244" class="tm" text-anchor="middle">1 deploy</text>
+        <text x="420" y="244" class="tm" text-anchor="middle">3 deploys, 3 owners</text>
+      </svg>
+      </div>
+      <figcaption>Same features, two shapes. Microservices trade function calls for network calls.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Interview framework</h3><label class="got"><input type="checkbox" id="k-l2-int"><span>Got it</span></label></div>
+      <ul>
+        <li>Ask before you draw. Who uses it? How many? Read-heavy or write-heavy?</li>
+        <li>Do quick math. It tells you which parts matter.</li>
+        <li>Draw a simple design that works. Then fix the bottleneck.</li>
+        <li>Close with trade-offs and what you would do next.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  A["1 Clarify requirements"] --> B["2 Estimate scale"]
+  B --> C["3 High-level design"]
+  C --> D["4 Deep dive"]
+  D --> E["5 Wrap up"]
+  D -.->|"found a bottleneck"| C
+      </pre></div>
+      <figcaption>The usual flow in a design interview. Steps 3 and 4 repeat.</figcaption>
+    </figure>
+  </article>
+
+  <div class="watch">
+    <h3>Watch · L2</h3>
+    <ul>
+      <li><a href="https://www.youtube.com/watch?v=i7twT3x5yv8" target="_blank" rel="noopener"><span class="who">ByteByteGo</span><span class="what">System Design Interview: A Step-By-Step Guide<small>The framework above, in about 10 minutes.</small></span><span class="kind">video</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=zaRkONvyGr8" target="_blank" rel="noopener"><span class="who">Gaurav Sen</span><span class="what">What is Consistent Hashing and Where is it used?<small>The ring, drawn by hand.</small></span><span class="kind">video</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=xbgzl2maQUU" target="_blank" rel="noopener"><span class="who">ByteByteGo</span><span class="what">Algorithms You Should Know Before System Design Interviews<small>Consistent hashing, rate limiters, Bloom filters and more.</small></span><span class="kind">video</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ L3 ============ -->
+<section class="level" id="l3" style="--tc:var(--l3);--tt:var(--l3t)">
+  <div class="lv-head">
+    <span class="lv-tag">L3</span>
+    <div><h2>Advanced</h2><p class="lv-sub">Look inside the data systems. <b>New problem:</b> copies disagree, retries double-charge, writes get lost.</p></div>
+    <span class="lv-count" data-count="l3">0 / 10 done</span>
+  </div>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Storage engines: B-tree vs LSM</h3><label class="got"><input type="checkbox" id="k-l3-lsm"><span>Got it</span></label></div>
+      <ul>
+        <li><b>B-tree:</b> updates pages in place. Fast reads. Postgres, MySQL.</li>
+        <li><b>LSM-tree:</b> appends only. Fast writes. RocksDB, Cassandra.</li>
+        <li>LSM writes go to a log and a RAM table, then flush to sorted files.</li>
+        <li>Background <b>compaction</b> merges files and drops old versions.</li>
+        <li><b>Bloom filters</b> let reads skip files that cannot hold the key.</li>
+      </ul>
+      <span class="key">Write-heavy? LSM. Read-heavy? B-tree.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  W["Write"] --> WAL[("Write-ahead log on disk")]
+  W --> M["Memtable in RAM"]
+  M -->|"full: flush"| S0["SSTable L0"]
+  S0 -->|"compaction"| S1["SSTable L1"]
+  S1 -->|"compaction"| S2["SSTable L2"]
+  R["Read"] -.->|"1 check"| M
+  R -.->|"2 Bloom filter, then"| S0
+      </pre></div>
+      <figcaption>LSM write path. The log protects the RAM table if the node crashes.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Consistency models</h3><label class="got"><input type="checkbox" id="k-l3-cons"><span>Got it</span></label></div>
+      <ul>
+        <li>A consistency model is a promise about what reads can return.</li>
+        <li>Stronger promise = more coordination = more latency.</li>
+        <li>Many apps need only <b>read-your-writes</b> for the user's own data.</li>
+        <li>Pick per feature. A bank balance and a like counter need different promises.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 282" role="img" aria-label="Consistency models from strongest to weakest: linearizable, sequential, causal, read-your-writes, eventual, with example systems for each.">
+        <line x1="26" y1="266" x2="26" y2="20" class="sa" marker-end="url(#a3)"/>
+        <text x="16" y="150" class="ta" text-anchor="middle" transform="rotate(-90 16 150)">stronger · slower</text>
+        <rect x="46" y="16" width="260" height="44" rx="8" class="ba"/><text x="58" y="34" class="tb">Linearizable</text><text x="58" y="51" class="tm">acts like one single copy</text>
+        <rect x="46" y="70" width="260" height="44" rx="8" class="b"/><text x="58" y="88" class="tb">Sequential</text><text x="58" y="105" class="tm">all see one order, maybe late</text>
+        <rect x="46" y="124" width="260" height="44" rx="8" class="b"/><text x="58" y="142" class="tb">Causal</text><text x="58" y="159" class="tm">a reply never shows before its post</text>
+        <rect x="46" y="178" width="260" height="44" rx="8" class="b"/><text x="58" y="196" class="tb">Read-your-writes</text><text x="58" y="213" class="tm">you always see your own edits</text>
+        <rect x="46" y="232" width="260" height="44" rx="8" class="b"/><text x="58" y="250" class="tb">Eventual</text><text x="58" y="267" class="tm">copies agree… at some point</text>
+        <text x="320" y="43" class="t">etcd, Spanner, ZooKeeper writes</text>
+        <text x="320" y="97" class="t">ZooKeeper reads</text>
+        <text x="320" y="151" class="t">MongoDB causal sessions</text>
+        <text x="320" y="205" class="t">read your profile from the leader</text>
+        <text x="320" y="259" class="t">DNS, Cassandra at ONE</text>
+      </svg>
+      </div>
+      <figcaption>The ladder of promises. Each step down removes coordination and gains speed and uptime.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Quorums</h3><label class="got"><input type="checkbox" id="k-l3-quorum"><span>Got it</span></label></div>
+      <ul>
+        <li>N copies. A write waits for W acks. A read asks R copies.</li>
+        <li>If <b>W + R &gt; N</b>, every read set overlaps every write set.</li>
+        <li>The overlap copy holds the newest version. The reader keeps the newest.</li>
+        <li>Common setting: N=3, W=2, R=2. Survives one dead node.</li>
+        <li>Used in Dynamo-style stores: Cassandra, Riak, DynamoDB internals.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 232" role="img" aria-label="Three replicas. The writer stores v2 on replicas 1 and 2. The reader asks replicas 2 and 3, gets v2 and v1, and keeps v2. Replica 2 is the overlap.">
+        <rect x="40" y="10" width="130" height="34" rx="8" class="b"/><text x="105" y="32" class="tb" text-anchor="middle">Writer: v2</text>
+        <rect x="40" y="90" width="130" height="56" rx="8" class="b"/><text x="105" y="114" class="tb" text-anchor="middle">Replica 1</text><text x="105" y="132" class="tm" text-anchor="middle">v2</text>
+        <rect x="215" y="90" width="130" height="56" rx="8" class="ba"/><text x="280" y="114" class="tb" text-anchor="middle">Replica 2</text><text x="280" y="132" class="ta" text-anchor="middle">v2 · overlap</text>
+        <rect x="390" y="90" width="130" height="56" rx="8" class="b"/><text x="455" y="114" class="tb" text-anchor="middle">Replica 3</text><text x="455" y="132" class="tm" text-anchor="middle">v1 (missed write)</text>
+        <line x1="105" y1="44" x2="105" y2="86" class="sa" marker-end="url(#a3)"/>
+        <line x1="150" y1="44" x2="250" y2="86" class="sa" marker-end="url(#a3)"/>
+        <text x="190" y="58" class="ta">write W=2</text>
+        <rect x="390" y="188" width="130" height="34" rx="8" class="b"/><text x="455" y="210" class="tb" text-anchor="middle">Reader</text>
+        <line x1="300" y1="146" x2="404" y2="186" class="s" marker-end="url(#ah)"/>
+        <line x1="455" y1="146" x2="455" y2="184" class="s" marker-end="url(#ah)"/>
+        <text x="350" y="160" class="tm">read R=2</text>
+        <text x="40" y="196" class="ta">W + R &gt; N</text>
+        <text x="40" y="214" class="tm">2 + 2 &gt; 3, so sets overlap</text>
+        <text x="380" y="230" class="tm" text-anchor="end">keeps newest: v2</text>
+      </svg>
+      </div>
+      <figcaption>The overlap guarantees the reader sees at least one copy of the latest write.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Isolation levels</h3><label class="got"><input type="checkbox" id="k-l3-iso"><span>Got it</span></label></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Level</th><th>Stops</th><th>Still allows</th></tr></thead>
+        <tbody>
+          <tr><td><b>Read committed</b></td><td>Dirty reads</td><td>Lost updates</td></tr>
+          <tr><td><b>Snapshot</b></td><td>Changing reads mid-txn</td><td>Write skew</td></tr>
+          <tr><td><b>Serializable</b></td><td>All of the above</td><td>Nothing; it costs speed</td></tr>
+        </tbody>
+      </table></div>
+      <p>Many databases default to read committed. Check yours. Fix lost updates with atomic updates (<code>SET n = n + 1</code>), <code>SELECT … FOR UPDATE</code>, or serializable mode.</p>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant T1 as Txn 1
+  participant DB as Database
+  participant T2 as Txn 2
+  T1->>DB: read stock = 10
+  T2->>DB: read stock = 10
+  T1->>DB: write stock = 9
+  T2->>DB: write stock = 9
+  Note over DB: Two sales, stock shows 9. Expected 8.
+      </pre></div>
+      <figcaption>The lost update. Both transactions read the same old value, and the second write hides the first.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Two-phase commit (2PC)</h3><label class="got"><input type="checkbox" id="k-l3-2pc"><span>Got it</span></label></div>
+      <ul>
+        <li>One transaction across two databases. All commit or none.</li>
+        <li><b>Phase 1:</b> coordinator asks "can you commit?" Each node locks and votes.</li>
+        <li><b>Phase 2:</b> all YES → commit. Any NO → abort.</li>
+        <li>Weak spot: a dead coordinator leaves nodes stuck, holding locks.</li>
+      </ul>
+      <span class="key">Correct, but slow and blocking.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant C as Coordinator
+  participant A as Orders DB
+  participant B as Payments DB
+  C->>A: PREPARE
+  C->>B: PREPARE
+  A-->>C: YES, locked
+  B-->>C: YES, locked
+  C->>A: COMMIT
+  C->>B: COMMIT
+  Note over A,B: If C dies before COMMIT, A and B wait with locks held
+      </pre></div>
+      <figcaption>Both nodes promise first, then commit. The promise is what makes it atomic.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Sagas</h3><label class="got"><input type="checkbox" id="k-l3-saga"><span>Got it</span></label></div>
+      <ul>
+        <li>Split a long process into local steps. Each step commits alone.</li>
+        <li>If a step fails, run <b>compensating steps</b> in reverse.</li>
+        <li>No global locks. Other users can see half-done states.</li>
+        <li><b>Orchestrated:</b> one service drives the steps. <b>Choreographed:</b> services react to events.</li>
+      </ul>
+      <span class="key">Microservices use sagas, not 2PC.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  A["1 Reserve stock"] --> B["2 Charge card"]
+  B --> C["3 Book courier"]
+  C --> D["Done"]
+  C -.->|"no courier"| UB["Undo 2: refund card"]
+  UB -.-> UA["Undo 1: release stock"]
+  B -.->|"card declined"| UA
+      </pre></div>
+      <figcaption>An order saga. Dashed paths are compensations that undo earlier steps.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Event logs (Kafka)</h3><label class="got"><input type="checkbox" id="k-l3-log"><span>Got it</span></label></div>
+      <ul>
+        <li>A topic is an append-only log, split into <b>partitions</b>.</li>
+        <li>Events keep their order inside one partition only. Key by user or order ID.</li>
+        <li>Each consumer group tracks its own <b>offset</b>. Many readers, one log.</li>
+        <li>Events stay for days. A new service can replay history.</li>
+      </ul>
+      <span class="key">Queue: a job is done once. Log: events are kept and replayed.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 250" role="img" aria-label="A topic with three partitions of numbered events. Consumer group A and group B read the same partitions at different offsets.">
+        <text x="20" y="20" class="ta">topic: orders</text>
+        <g>
+          <text x="20" y="62" class="tb">P0</text>
+          <rect x="60" y="40" width="40" height="34" rx="4" class="b"/><rect x="104" y="40" width="40" height="34" rx="4" class="b"/><rect x="148" y="40" width="40" height="34" rx="4" class="b"/><rect x="192" y="40" width="40" height="34" rx="4" class="b"/><rect x="236" y="40" width="40" height="34" rx="4" class="b"/><rect x="280" y="40" width="40" height="34" rx="4" class="b"/><rect x="324" y="40" width="40" height="34" rx="4" class="b"/><rect x="368" y="40" width="40" height="34" rx="4" class="b"/>
+          <text y="62" class="tm" text-anchor="middle"><tspan x="80">0</tspan><tspan x="124">1</tspan><tspan x="168">2</tspan><tspan x="212">3</tspan><tspan x="256">4</tspan><tspan x="300">5</tspan><tspan x="344">6</tspan><tspan x="388">7</tspan></text>
+          <polygon points="344,77 338,88 350,88" class="fa"/><polygon points="212,37 206,26 218,26" class="fi"/>
+        </g>
+        <g>
+          <text x="20" y="132" class="tb">P1</text>
+          <rect x="60" y="110" width="40" height="34" rx="4" class="b"/><rect x="104" y="110" width="40" height="34" rx="4" class="b"/><rect x="148" y="110" width="40" height="34" rx="4" class="b"/><rect x="192" y="110" width="40" height="34" rx="4" class="b"/><rect x="236" y="110" width="40" height="34" rx="4" class="b"/><rect x="280" y="110" width="40" height="34" rx="4" class="b"/>
+          <text y="132" class="tm" text-anchor="middle"><tspan x="80">0</tspan><tspan x="124">1</tspan><tspan x="168">2</tspan><tspan x="212">3</tspan><tspan x="256">4</tspan><tspan x="300">5</tspan></text>
+          <polygon points="300,147 294,158 306,158" class="fa"/><polygon points="124,107 118,96 130,96" class="fi"/>
+        </g>
+        <g>
+          <text x="20" y="202" class="tb">P2</text>
+          <rect x="60" y="180" width="40" height="34" rx="4" class="b"/><rect x="104" y="180" width="40" height="34" rx="4" class="b"/><rect x="148" y="180" width="40" height="34" rx="4" class="b"/><rect x="192" y="180" width="40" height="34" rx="4" class="b"/><rect x="236" y="180" width="40" height="34" rx="4" class="b"/><rect x="280" y="180" width="40" height="34" rx="4" class="b"/><rect x="324" y="180" width="40" height="34" rx="4" class="b"/>
+          <text y="202" class="tm" text-anchor="middle"><tspan x="80">0</tspan><tspan x="124">1</tspan><tspan x="168">2</tspan><tspan x="212">3</tspan><tspan x="256">4</tspan><tspan x="300">5</tspan><tspan x="344">6</tspan></text>
+          <polygon points="256,217 250,228 262,228" class="fa"/><polygon points="168,177 162,166 174,166" class="fi"/>
+        </g>
+        <polygon points="436,64 430,75 442,75" class="fa"/><text x="450" y="74" class="t">group A</text><text x="450" y="90" class="tm">search index</text>
+        <polygon points="436,118 430,107 442,107" class="fi"/><text x="450" y="118" class="t">group B</text><text x="450" y="134" class="tm">analytics</text>
+        <text x="430" y="172" class="tm">own offset</text><text x="430" y="188" class="tm">per group</text>
+        <text x="20" y="244" class="tm">new events append on the right; old ones stay for replay</text>
+      </svg>
+      </div>
+      <figcaption>Two consumer groups read the same partitions. Each marker is that group's offset. Neither group slows the other.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Idempotency</h3><label class="got"><input type="checkbox" id="k-l3-idem"><span>Got it</span></label></div>
+      <ul>
+        <li>Networks drop replies. Clients retry. Retries can repeat side effects.</li>
+        <li>An <b>idempotent</b> operation gives the same result if run twice.</li>
+        <li>Client sends a unique <b>idempotency key</b>. Server stores key + result.</li>
+        <li>"Exactly once" in practice = at-least-once delivery + dedupe.</li>
+      </ul>
+      <span class="key">Every payment API needs this.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant C as Client
+  participant S as Payment API
+  participant D as Key store
+  C->>S: POST /charge, key=a7f3, 50 USD
+  S->>D: save a7f3 with result OK
+  S--xC: reply lost, timeout
+  C->>S: retry POST /charge, key=a7f3
+  S->>D: a7f3 seen before?
+  D-->>S: yes, result OK
+  S-->>C: OK, no second charge
+      </pre></div>
+      <figcaption>The retry carries the same key, so the server returns the saved result instead of charging again.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Outbox pattern and CDC</h3><label class="got"><input type="checkbox" id="k-l3-outbox"><span>Got it</span></label></div>
+      <ul>
+        <li><b>Dual-write bug:</b> save to DB, then publish to Kafka. If step 2 fails, systems drift.</li>
+        <li><b>Outbox:</b> write the row and the event in one DB transaction.</li>
+        <li>A relay reads the outbox table and publishes. It retries until it succeeds.</li>
+        <li><b>CDC</b> (change data capture) reads the DB's own log. Tool: Debezium.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  S["Order service"] -->|"one transaction"| DB[("orders + outbox tables")]
+  DB -->|"relay or CDC reads"| R["Publisher"]
+  R -->|"publish, retry on fail"| K[("Kafka")]
+  K --> E["Email service"]
+  K --> A["Analytics"]
+      </pre></div>
+      <figcaption>The event cannot get lost, because it is saved in the same commit as the data.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Observability and SLOs</h3><label class="got"><input type="checkbox" id="k-l3-obs"><span>Got it</span></label></div>
+      <ul>
+        <li><b>Metrics</b> tell you something is wrong. <b>Traces</b> show where. <b>Logs</b> show why.</li>
+        <li><b>SLI:</b> what you measure, like p99 latency. <b>SLO:</b> the target. <b>Error budget:</b> allowed failure.</li>
+        <li>Watch p99, not the average. Averages hide slow users.</li>
+      </ul>
+      <div class="tbl"><table>
+        <thead><tr><th>Uptime</th><th>Downtime per 30 days</th></tr></thead>
+        <tbody>
+          <tr><td class="n">99%</td><td class="n">7.2 h</td></tr>
+          <tr><td class="n">99.9%</td><td class="n">43 min</td></tr>
+          <tr><td class="n">99.99%</td><td class="n">4.3 min</td></tr>
+          <tr><td class="n">99.999%</td><td class="n">26 s</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 206" role="img" aria-label="Trace waterfall for GET /feed taking 180 milliseconds. The database query takes 115 milliseconds, most of the total.">
+        <text x="140" y="34" class="tb" text-anchor="end">GET /feed</text><rect x="150" y="20" width="378" height="20" rx="3" class="bs"/><text x="520" y="35" class="tm" text-anchor="end">180 ms</text>
+        <text x="140" y="64" class="t" text-anchor="end">auth check</text><rect x="158" y="50" width="29" height="20" rx="3" class="b"/><text x="194" y="65" class="tm">14 ms</text>
+        <text x="140" y="94" class="t" text-anchor="end">cache get (miss)</text><rect x="192" y="80" width="6" height="20" rx="2" class="b"/><text x="205" y="95" class="tm">3 ms</text>
+        <text x="140" y="124" class="tb" text-anchor="end">db query</text><rect x="203" y="110" width="241" height="20" rx="3" class="fa"/><text x="211" y="125" class="tw">115 ms · fix this</text>
+        <text x="140" y="154" class="t" text-anchor="end">render JSON</text><rect x="455" y="140" width="65" height="20" rx="3" class="b"/><text x="450" y="155" class="tm" text-anchor="end">31 ms</text>
+        <line x1="150" y1="176" x2="528" y2="176" class="sm"/>
+        <g class="sm"><line x1="150" y1="172" x2="150" y2="180"/><line x1="255" y1="172" x2="255" y2="180"/><line x1="360" y1="172" x2="360" y2="180"/><line x1="465" y1="172" x2="465" y2="180"/></g>
+        <text x="150" y="196" class="tm" text-anchor="middle">0</text><text x="255" y="196" class="tm" text-anchor="middle">50</text><text x="360" y="196" class="tm" text-anchor="middle">100</text><text x="465" y="196" class="tm" text-anchor="middle">150 ms</text>
+      </svg>
+      </div>
+      <figcaption>A trace splits one request into timed spans. Here the database query is most of the 180 ms.</figcaption>
+    </figure>
+  </article>
+
+  <div class="watch">
+    <h3>Watch · L3</h3>
+    <ul>
+      <li><a href="https://www.youtube.com/playlist?list=PLjTveVh7FakLdTmm42TMxbN8PvVn5g4KJ" target="_blank" rel="noopener"><span class="who">Jordan has no life</span><span class="what">Systems Design 2.0<small>Deep concept series: storage engines, replication, partitioning, streams.</small></span><span class="kind">playlist</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=iYIjJ7utdDI" target="_blank" rel="noopener"><span class="who">Jordan has no life</span><span class="what">Systems Design in an Hour<small>Fast review of the whole level.</small></span><span class="kind">video</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=fhdPyoO6aXI" target="_blank" rel="noopener"><span class="who">Hello Interview</span><span class="what">Design Ticketmaster<small>Full mock design. Seat locks, contention, consistency.</small></span><span class="kind">walkthrough</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=5ZjhNTM8XU8" target="_blank" rel="noopener"><span class="who">Martin Kleppmann</span><span class="what">Transactions: myths, surprises and opportunities<small>Isolation levels and anomalies, by the DDIA author.</small></span><span class="kind">talk</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=fU9hR3kiOK0" target="_blank" rel="noopener"><span class="who">Martin Kleppmann</span><span class="what">Turning the database inside out<small>Why event logs change how you build data systems.</small></span><span class="kind">talk</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ L4 ============ -->
+<section class="level" id="l4" style="--tc:var(--l4);--tt:var(--l4t)">
+  <div class="lv-head">
+    <span class="lv-tag">L4</span>
+    <div><h2>Expert</h2><p class="lv-sub">Distributed systems theory. <b>New problem:</b> clocks drift, messages vanish, and nodes stop in the middle of a step.</p></div>
+    <span class="lv-count" data-count="l4">0 / 9 done</span>
+  </div>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Partial failure</h3><label class="got"><input type="checkbox" id="k-l4-fail"><span>Got it</span></label></div>
+      <ul>
+        <li>One machine either works or crashes. A cluster can be half broken.</li>
+        <li>A timeout tells you nothing about the cause.</li>
+        <li><b>Failure models:</b> crash-stop, crash-recovery, lost messages, slow nodes, lying nodes (Byzantine).</li>
+        <li>The network is not reliable, latency is not zero, and clocks are not in sync.</li>
+      </ul>
+      <span class="key">Design every call for "no answer".</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  A["Request sent, no reply"] --> B{"What happened?"}
+  B --> C["Request lost"]
+  B --> D["Node crashed"]
+  B --> E["Node paused for GC"]
+  B --> F["Reply lost"]
+  C --> G["You see only a timeout"]
+  D --> G
+  E --> G
+  F --> G
+      </pre></div>
+      <figcaption>Four different faults, one symptom. In case 4 the work was done, so a retry may repeat it.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Logical clocks</h3><label class="got"><input type="checkbox" id="k-l4-clock"><span>Got it</span></label></div>
+      <ul>
+        <li>Wall clocks drift. NTP can jump them backward. "Last write wins" by timestamp can drop writes.</li>
+        <li><b>Lamport clock:</b> a counter. +1 per event. On receive: max(mine, message) + 1.</li>
+        <li>If a caused b, then L(a) &lt; L(b). The reverse is not true.</li>
+        <li><b>Vector clocks</b> keep one counter per node. They detect concurrent events.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 236" role="img" aria-label="Three process timelines with Lamport counters. P1 sends m1 to P2, P2 sends m2 to P3. Event e3 on P1 has counter 3 and event g2 on P3 has counter 5, but they are concurrent.">
+        <text x="20" y="55" class="tb">P1</text><text x="20" y="125" class="tb">P2</text><text x="20" y="195" class="tb">P3</text>
+        <line x1="56" y1="50" x2="540" y2="50" class="sm" marker-end="url(#am)"/>
+        <line x1="56" y1="120" x2="540" y2="120" class="sm" marker-end="url(#am)"/>
+        <line x1="56" y1="190" x2="540" y2="190" class="sm" marker-end="url(#am)"/>
+        <line x1="200" y1="50" x2="275" y2="115" class="s" marker-end="url(#ah)"/><text x="246" y="76" class="tm">m1 (2)</text>
+        <line x1="360" y1="120" x2="435" y2="185" class="s" marker-end="url(#ah)"/><text x="406" y="146" class="tm">m2 (4)</text>
+        <circle cx="120" cy="50" r="7" class="b"/><text x="120" y="36" class="tb" text-anchor="middle">1</text>
+        <circle cx="200" cy="50" r="7" class="b"/><text x="200" y="36" class="tb" text-anchor="middle">2</text>
+        <circle cx="470" cy="50" r="8" class="fa"/><text x="470" y="34" class="ta" text-anchor="middle">e3 = 3</text>
+        <circle cx="140" cy="120" r="7" class="b"/><text x="140" y="106" class="tb" text-anchor="middle">1</text>
+        <circle cx="280" cy="120" r="7" class="b"/><text x="292" y="106" class="tb" text-anchor="middle">3</text>
+        <circle cx="360" cy="120" r="7" class="b"/><text x="360" y="106" class="tb" text-anchor="middle">4</text>
+        <circle cx="180" cy="190" r="7" class="b"/><text x="180" y="176" class="tb" text-anchor="middle">1</text>
+        <circle cx="440" cy="190" r="8" class="fa"/><text x="458" y="178" class="ta">g2 = 5</text>
+        <text x="56" y="226" class="tm">receive rule: max(local, message) + 1 · e3 and g2 are concurrent</text>
+      </svg>
+      </div>
+      <figcaption>Lamport counters respect cause and effect. But 3 &lt; 5 does not mean e3 came first. Vector clocks fix that.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Linearizability</h3><label class="got"><input type="checkbox" id="k-l4-lin"><span>Got it</span></label></div>
+      <ul>
+        <li>The system acts like one copy. Once a write finishes, every later read sees it.</li>
+        <li>Needed for locks, leader election, unique usernames, bank balances.</li>
+        <li><b>Linearizable</b> is about one object in real time. <b>Serializable</b> is about transactions over many objects.</li>
+        <li>Both together = "strict serializable". Spanner gives this.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 196" role="img" aria-label="Timeline: client A writes x equals 1. Client C reads during the write and may see 0 or 1. Client B reads after the write finished and sees 0, which breaks linearizability.">
+        <line x1="40" y1="178" x2="540" y2="178" class="sm" marker-end="url(#am)"/><text x="536" y="194" class="tm" text-anchor="end">time</text>
+        <line x1="260" y1="14" x2="260" y2="178" class="sd" style="stroke:var(--muted)"/><text x="264" y="14" class="tm">write done</text>
+        <rect x="60" y="24" width="200" height="30" rx="6" class="b"/><text x="70" y="44" class="t">A: write x = 1</text>
+        <rect x="200" y="70" width="160" height="30" rx="6" class="b"/><text x="210" y="90" class="t">C: read x → 1</text><text x="368" y="90" class="tm">overlaps: 0 or 1 is fine</text>
+        <rect x="320" y="116" width="160" height="30" rx="6" class="ba"/><text x="330" y="136" class="tb">B: read x → 0</text>
+        <text x="320" y="166" class="ta">✕ starts after the write, so it must see 1</text>
+      </svg>
+      </div>
+      <figcaption>The test: any read that starts after a write ends must see that write. B fails it.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Consensus: Raft leader election</h3><label class="got"><input type="checkbox" id="k-l4-raft1"><span>Got it</span></label></div>
+      <ul>
+        <li>Consensus = nodes agree on one value, even when some crash.</li>
+        <li>Raft picks one leader per <b>term</b>. Terms only go up.</li>
+        <li>A follower that hears no heartbeat becomes a candidate and asks for votes.</li>
+        <li>Majority wins. 5 nodes survive 2 failures. 3 nodes survive 1.</li>
+        <li>Built on it: etcd, Consul, CockroachDB, Kafka KRaft.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+stateDiagram-v2
+  [*] --> Follower
+  Follower --> Candidate: no heartbeat, timeout
+  Candidate --> Leader: gets majority of votes
+  Candidate --> Candidate: split vote, new term
+  Candidate --> Follower: sees higher term
+  Leader --> Follower: sees higher term
+      </pre></div>
+      <figcaption>Every Raft node is in one of three states. Random timeouts make split votes rare.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Consensus: Raft log replication</h3><label class="got"><input type="checkbox" id="k-l4-raft2"><span>Got it</span></label></div>
+      <ul>
+        <li>The leader appends each command to its log and sends it to followers.</li>
+        <li>An entry is <b>committed</b> when a majority stores it.</li>
+        <li>Committed entries never change. All nodes apply them in the same order.</li>
+        <li>Same log + same order = same state machine. This is <b>state machine replication</b>.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant C as Client
+  participant L as Leader
+  participant F1 as Follower 1
+  participant F2 as Follower 2
+  C->>L: SET x = 5
+  L->>L: append to log, term 3
+  L->>F1: AppendEntries
+  L->>F2: AppendEntries
+  F1-->>L: stored
+  Note over L: 2 of 3 have it, so commit
+  L-->>C: done
+  F2-->>L: stored, late
+      </pre></div>
+      <figcaption>The leader answers after a majority stores the entry. It does not wait for the slow follower.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Split brain and fencing tokens</h3><label class="got"><input type="checkbox" id="k-l4-fence"><span>Got it</span></label></div>
+      <ul>
+        <li>A lock holder can pause (GC, VM freeze) and wake up after its lease expired.</li>
+        <li>It still thinks it holds the lock. Now two nodes act as leader.</li>
+        <li>Fix: the lock service hands out a number that always goes up, the <b>fencing token</b>.</li>
+        <li>Storage rejects any write with a token older than one it has seen.</li>
+      </ul>
+      <span class="key">Leases alone are not safe. Fence the writes.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant A as Client A
+  participant L as Lock service
+  participant B as Client B
+  participant S as Storage
+  A->>L: get lease
+  L-->>A: ok, token 33
+  Note over A: long GC pause
+  Note over L: lease of A expires
+  B->>L: get lease
+  L-->>B: ok, token 34
+  B->>S: write, token 34
+  S-->>B: ok
+  A->>S: write, token 33
+  S-->>A: rejected, 33 is older than 34
+      </pre></div>
+      <figcaption>Client A wakes up and tries to write. The token stops it.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>TrueTime and Spanner</h3><label class="got"><input type="checkbox" id="k-l4-tt"><span>Got it</span></label></div>
+      <ul>
+        <li>Google Spanner is a global SQL database with strict serializability.</li>
+        <li>TrueTime uses GPS and atomic clocks. It returns a time range, not one point.</li>
+        <li>On commit, Spanner picks the top of the range, then <b>waits out the uncertainty</b>.</li>
+        <li>After the wait, any later transaction gets a larger timestamp. Order is safe without talking.</li>
+      </ul>
+      <span class="key">Spend a few ms of waiting to buy global order.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant T as Transaction
+  participant TT as TrueTime
+  T->>TT: now()
+  TT-->>T: earliest 10.000, latest 10.007
+  Note over T: commit timestamp = 10.007
+  T->>TT: now() until earliest is past 10.007
+  Note over T: about 7 ms commit wait, then reply
+      </pre></div>
+      <figcaption>Commit wait. Smaller clock uncertainty means a shorter wait.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Multi-region</h3><label class="got"><input type="checkbox" id="k-l4-region"><span>Got it</span></label></div>
+      <ul>
+        <li><b>Active–passive:</b> one region writes, one waits. Simple. Failover can lose the last seconds.</li>
+        <li><b>Active–active:</b> both regions write. Low latency everywhere. Conflicts appear.</li>
+        <li>Conflict fixes: last-write-wins, merge rules, CRDTs, or one "home region" per user.</li>
+        <li>A sync write across an ocean adds about 100 ms or more.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 244" role="img" aria-label="Left: active-passive, region A takes writes and copies to standby region B. Right: active-active, both regions take writes and sync both ways.">
+        <line x1="280" y1="8" x2="280" y2="236" class="sm" style="stroke-dasharray:3 4"/>
+        <text x="135" y="22" class="ta" text-anchor="middle">ACTIVE–PASSIVE</text>
+        <rect x="30" y="40" width="210" height="58" rx="10" class="ba"/><text x="135" y="64" class="tb" text-anchor="middle">Region A</text><text x="135" y="84" class="tm" text-anchor="middle">reads + writes</text>
+        <line x1="135" y1="98" x2="135" y2="146" class="sd" marker-end="url(#ah)"/><text x="145" y="126" class="tm">async copy</text>
+        <rect x="30" y="150" width="210" height="58" rx="10" class="b"/><text x="135" y="174" class="tb" text-anchor="middle">Region B</text><text x="135" y="194" class="tm" text-anchor="middle">standby</text>
+        <text x="135" y="232" class="tm" text-anchor="middle">A dies: promote B</text>
+        <text x="420" y="22" class="ta" text-anchor="middle">ACTIVE–ACTIVE</text>
+        <rect x="310" y="40" width="220" height="58" rx="10" class="ba"/><text x="420" y="64" class="tb" text-anchor="middle">Region A</text><text x="420" y="84" class="tm" text-anchor="middle">reads + writes</text>
+        <rect x="310" y="150" width="220" height="58" rx="10" class="ba"/><text x="420" y="174" class="tb" text-anchor="middle">Region B</text><text x="420" y="194" class="tm" text-anchor="middle">reads + writes</text>
+        <line x1="395" y1="98" x2="395" y2="146" class="s" marker-end="url(#ah)"/>
+        <line x1="445" y1="146" x2="445" y2="102" class="s" marker-end="url(#ah)"/>
+        <text x="455" y="128" class="tm">sync both ways</text>
+        <text x="420" y="232" class="tm" text-anchor="middle">same row edited twice: conflict</text>
+      </svg>
+      </div>
+      <figcaption>The extra arrow on the right is the whole trade: local writes everywhere, in exchange for conflicts.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Tail latency at scale</h3><label class="got"><input type="checkbox" id="k-l4-tail"><span>Got it</span></label></div>
+      <ul>
+        <li>One user request may fan out to 100 servers. It is as slow as the slowest one.</li>
+        <li>If each server is slow 1% of the time, 63% of requests hit a slow one.</li>
+        <li><b>Hedged requests:</b> send a second copy after the p95 time. Take the first answer.</li>
+        <li>Set timeouts and budgets per hop. Drop work that will miss the deadline.</li>
+      </ul>
+      <span class="key">At scale, p99 becomes the median.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 216" role="img" aria-label="One request fans out to 100 servers. Each is slow 1 percent of the time, so about 63 percent of requests wait on at least one slow server.">
+        <rect x="200" y="8" width="160" height="34" rx="8" class="b"/><text x="280" y="30" class="tb" text-anchor="middle">1 user request</text>
+        <g class="sm">
+          <line x1="280" y1="42" x2="42" y2="142"/><line x1="280" y1="42" x2="67" y2="142"/><line x1="280" y1="42" x2="92" y2="142"/><line x1="280" y1="42" x2="117" y2="142"/><line x1="280" y1="42" x2="142" y2="142"/><line x1="280" y1="42" x2="167" y2="142"/><line x1="280" y1="42" x2="192" y2="142"/><line x1="280" y1="42" x2="217" y2="142"/><line x1="280" y1="42" x2="242" y2="142"/><line x1="280" y1="42" x2="267" y2="142"/><line x1="280" y1="42" x2="292" y2="142"/><line x1="280" y1="42" x2="317" y2="142"/><line x1="280" y1="42" x2="342" y2="142"/><line x1="280" y1="42" x2="392" y2="142"/><line x1="280" y1="42" x2="417" y2="142"/><line x1="280" y1="42" x2="442" y2="142"/><line x1="280" y1="42" x2="467" y2="142"/><line x1="280" y1="42" x2="492" y2="142"/><line x1="280" y1="42" x2="517" y2="142"/>
+        </g>
+        <line x1="280" y1="42" x2="367" y2="140" class="sa"/>
+        <g class="fi"><circle cx="42" cy="148" r="5"/><circle cx="67" cy="148" r="5"/><circle cx="92" cy="148" r="5"/><circle cx="117" cy="148" r="5"/><circle cx="142" cy="148" r="5"/><circle cx="167" cy="148" r="5"/><circle cx="192" cy="148" r="5"/><circle cx="217" cy="148" r="5"/><circle cx="242" cy="148" r="5"/><circle cx="267" cy="148" r="5"/><circle cx="292" cy="148" r="5"/><circle cx="317" cy="148" r="5"/><circle cx="342" cy="148" r="5"/><circle cx="392" cy="148" r="5"/><circle cx="417" cy="148" r="5"/><circle cx="442" cy="148" r="5"/><circle cx="467" cy="148" r="5"/><circle cx="492" cy="148" r="5"/><circle cx="517" cy="148" r="5"/></g>
+        <circle cx="367" cy="148" r="8" class="fa"/><text x="380" y="134" class="ta">slow: 1 s</text>
+        <text x="280" y="176" class="tm" text-anchor="middle">100 servers (20 drawn), each slow 1% of the time</text>
+        <text x="280" y="204" class="ta" text-anchor="middle" style="font-size:13px">1 − 0.99^100 ≈ 63% of requests wait on a slow one</text>
+      </svg>
+      </div>
+      <figcaption>Fan-out turns rare slowness into common slowness. This is why big systems care about p99 and p99.9.</figcaption>
+    </figure>
+  </article>
+
+  <div class="watch">
+    <h3>Watch · L4</h3>
+    <ul>
+      <li><a href="https://www.youtube.com/playlist?list=PLeKd45zvjcDFUEv_ohr_HdUFe97RItdiB" target="_blank" rel="noopener"><span class="who">Martin Kleppmann</span><span class="what">Distributed Systems lecture series (Cambridge)<small>The best free course on this level. Clocks, broadcast, replication, consensus, Spanner.</small></span><span class="kind">playlist</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=uXEYuDwm7e4" target="_blank" rel="noopener"><span class="who">Martin Kleppmann</span><span class="what">Distributed Systems 6.2: Raft<small>Raft step by step, with pseudocode.</small></span><span class="kind">lecture</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=vYp4LYbnnW8" target="_blank" rel="noopener"><span class="who">John Ousterhout</span><span class="what">Designing for Understandability: The Raft Consensus Algorithm<small>Raft explained by one of its authors.</small></span><span class="kind">talk</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=cQP8WApzIQQ" target="_blank" rel="noopener"><span class="who">MIT 6.824</span><span class="what">Lecture 1: Introduction<small>Start of MIT's graduate distributed systems course (2020).</small></span><span class="kind">lecture</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=EpIgvowZr00" target="_blank" rel="noopener"><span class="who">MIT 6.824</span><span class="what">Lecture 3: GFS<small>How Google stored files on cheap, failing disks.</small></span><span class="kind">lecture</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=pbmyrNjzdDk" target="_blank" rel="noopener"><span class="who">MIT 6.824</span><span class="what">Lecture 8: ZooKeeper<small>Coordination as a service.</small></span><span class="kind">lecture</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=5OL28B4EGUc" target="_blank" rel="noopener"><span class="who">MIT 6.824</span><span class="what">Lecture 13: Spanner<small>TrueTime and commit wait in detail.</small></span><span class="kind">lecture</span></a></li>
+      <li><a href="https://thesecretlivesofdata.com/raft/" target="_blank" rel="noopener"><span class="who">Interactive</span><span class="what">The Secret Lives of Data: Raft<small>Animated Raft you click through. Not a video, but it works like one.</small></span><span class="kind">animation</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ L5 ============ -->
+<section class="level" id="l5" style="--tc:var(--l5);--tt:var(--l5t)">
+  <div class="lv-head">
+    <span class="lv-tag">L5</span>
+    <div><h2>Hardcore</h2><p class="lv-sub">Prove it, break it, read the papers. <b>New problem:</b> bugs hide in event orders you will never see in normal testing.</p></div>
+    <span class="lv-count" data-count="l5">0 / 10 done</span>
+  </div>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>FLP impossibility</h3><label class="got"><input type="checkbox" id="k-l5-flp"><span>Got it</span></label></div>
+      <ul>
+        <li>In a fully asynchronous network, no deterministic algorithm can always reach consensus if even one node may crash.</li>
+        <li>Reason: you cannot tell a dead node from a slow one.</li>
+        <li>Real systems give up a little. They stay <b>safe</b> always and make <b>progress</b> when the network behaves.</li>
+      </ul>
+      <span class="key">Safety always. Liveness when lucky.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart TD
+  A["Fully async network"] --> C["FLP, 1985: no algorithm always decides"]
+  B["Any one node may crash"] --> C
+  C --> D["Escape 1: timeouts that usually work"]
+  C --> E["Escape 2: randomness"]
+  C --> F["Escape 3: failure detectors"]
+  D --> R["Raft and Paxos: never wrong, sometimes stuck"]
+      </pre></div>
+      <figcaption>The result that shapes every consensus protocol. They trade guaranteed progress for guaranteed correctness.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Paxos</h3><label class="got"><input type="checkbox" id="k-l5-paxos"><span>Got it</span></label></div>
+      <ul>
+        <li>The original consensus protocol (Lamport). Raft is a cleaner relative.</li>
+        <li><b>Phase 1:</b> proposer sends Prepare(n). Acceptors promise to ignore lower numbers.</li>
+        <li><b>Phase 2:</b> proposer sends Accept(n, v). A majority accepting = value chosen.</li>
+        <li>Key rule: if any acceptor already accepted a value, the proposer must reuse it.</li>
+        <li>Family: Multi-Paxos, Viewstamped Replication, EPaxos, Flexible Paxos.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+sequenceDiagram
+  participant P as Proposer
+  participant A1 as Acceptor 1
+  participant A2 as Acceptor 2
+  P->>A1: Prepare n=7
+  P->>A2: Prepare n=7
+  A1-->>P: Promise, nothing accepted yet
+  A2-->>P: Promise, already accepted X at n=5
+  Note over P: Majority promised. Must propose X.
+  P->>A1: Accept n=7, value X
+  P->>A2: Accept n=7, value X
+  A1-->>P: Accepted
+  A2-->>P: Accepted
+  Note over P,A2: X is chosen
+      </pre></div>
+      <figcaption>Two of three acceptors shown. The reuse rule is why two proposers can never choose different values.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Byzantine faults</h3><label class="got"><input type="checkbox" id="k-l5-bft"><span>Got it</span></label></div>
+      <ul>
+        <li>Crash faults stop. <b>Byzantine</b> faults lie: they send different values to different nodes.</li>
+        <li>To survive f liars you need <b>n ≥ 3f + 1</b> nodes. 4 nodes survive 1 liar.</li>
+        <li>Protocols: PBFT, Tendermint, HotStuff. Blockchains live here.</li>
+        <li>Inside one company's data center, most systems assume crash faults only.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 236" role="img" aria-label="Four nodes. Node 1 is a liar and sends value A to nodes 2 and 4 and value B to node 3. The three honest nodes compare and the majority value A wins.">
+        <line x1="148" y1="50" x2="410" y2="50" class="sa" marker-end="url(#a5)"/><text x="280" y="42" class="ta" text-anchor="middle">says A</text>
+        <line x1="120" y1="78" x2="120" y2="150" class="sa" marker-end="url(#a5)"/><text x="110" y="120" class="ta" text-anchor="end">says B</text>
+        <line x1="144" y1="66" x2="414" y2="166" class="sa" marker-end="url(#a5)"/><text x="300" y="104" class="ta">says A</text>
+        <line x1="440" y1="78" x2="440" y2="152" class="sd" style="stroke:var(--muted)"/>
+        <line x1="148" y1="180" x2="412" y2="180" class="sd" style="stroke:var(--muted)"/>
+        <line x1="146" y1="168" x2="414" y2="62" class="sd" style="stroke:var(--muted)"/>
+        <text x="280" y="198" class="tm" text-anchor="middle">honest nodes compare what they heard</text>
+        <circle cx="120" cy="50" r="28" class="ba"/><text x="120" y="47" class="tb" text-anchor="middle">N1</text><text x="120" y="63" class="ta" text-anchor="middle">liar</text>
+        <circle cx="440" cy="50" r="28" class="b"/><text x="440" y="55" class="tb" text-anchor="middle">N2</text>
+        <circle cx="120" cy="180" r="28" class="b"/><text x="120" y="185" class="tb" text-anchor="middle">N3</text>
+        <circle cx="440" cy="180" r="28" class="b"/><text x="440" y="185" class="tb" text-anchor="middle">N4</text>
+        <text x="280" y="228" class="ta" text-anchor="middle" style="font-size:13px">A, B, A → majority A · n = 4 ≥ 3f + 1</text>
+      </svg>
+      </div>
+      <figcaption>With only 3 nodes, the honest pair could not tell who lied. The fourth node breaks the tie.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>CRDTs</h3><label class="got"><input type="checkbox" id="k-l5-crdt"><span>Got it</span></label></div>
+      <ul>
+        <li>Data types that merge without coordination. No locks, no leader.</li>
+        <li>The merge is commutative, associative and idempotent. Order and repeats do not matter.</li>
+        <li><b>G-counter:</b> one slot per replica. Merge = max of each slot. Value = sum.</li>
+        <li>Used for offline-first apps and collaborative editors (Automerge, Yjs), and Riak.</li>
+      </ul>
+      <span class="key">Strong eventual consistency: same updates seen = same state.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 230" role="img" aria-label="Replica A holds counts A 3, B 0. Replica B holds A 1, B 2. Merging takes the max per slot: A 3, B 2, total 5.">
+        <rect x="30" y="20" width="200" height="74" rx="10" class="b"/><text x="130" y="42" class="tb" text-anchor="middle">Replica A</text><text x="130" y="64" class="t" text-anchor="middle" style="font-family:var(--mono)">A:3  B:0</text><text x="130" y="83" class="tm" text-anchor="middle">value 3</text>
+        <rect x="330" y="20" width="200" height="74" rx="10" class="b"/><text x="430" y="42" class="tb" text-anchor="middle">Replica B</text><text x="430" y="64" class="t" text-anchor="middle" style="font-family:var(--mono)">A:1  B:2</text><text x="430" y="83" class="tm" text-anchor="middle">value 3</text>
+        <line x1="150" y1="94" x2="226" y2="146" class="s" marker-end="url(#ah)"/>
+        <line x1="410" y1="94" x2="334" y2="146" class="s" marker-end="url(#ah)"/>
+        <text x="150" y="128" class="tm" text-anchor="end">sync</text><text x="410" y="128" class="tm">sync</text>
+        <rect x="180" y="150" width="200" height="74" rx="10" class="ba"/><text x="280" y="172" class="tb" text-anchor="middle">Merge: max per slot</text><text x="280" y="194" class="ta" text-anchor="middle" style="font-size:13px">A:3  B:2</text><text x="280" y="213" class="tm" text-anchor="middle">value 5</text>
+      </svg>
+      </div>
+      <figcaption>Both replicas show 3, but the true count is 5. Taking the larger total would lose 2 increments. Max per slot loses none.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Metastable failures</h3><label class="got"><input type="checkbox" id="k-l5-meta"><span>Got it</span></label></div>
+      <ul>
+        <li>A short trigger pushes the system into a bad state. The trigger ends. The outage does not.</li>
+        <li>Usual loop: retries add load, load adds latency, latency adds retries.</li>
+        <li>Fixes: exponential backoff with jitter, retry budgets, circuit breakers, load shedding.</li>
+        <li>Under overload, serve fewer requests well instead of all requests badly.</li>
+      </ul>
+      <span class="key">Retries are load. Budget them.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  T["Trigger: spike or slow disk"] --> L["Latency rises"]
+  L --> TO["Clients time out"]
+  TO --> R["Clients retry"]
+  R --> LD["Load rises"]
+  LD --> L
+  LD -.->|"trigger gone, loop stays"| S["Stuck outage"]
+      </pre></div>
+      <figcaption>A feedback loop that sustains itself. Breaking any arrow in the cycle ends it.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Cells and blast radius</h3><label class="got"><input type="checkbox" id="k-l5-cell"><span>Got it</span></label></div>
+      <ul>
+        <li>Split the system into full, independent copies called <b>cells</b>.</li>
+        <li>Each customer lives in one cell. A thin router sends them there.</li>
+        <li>A bad deploy, a poison request or a hot tenant hurts one cell only.</li>
+        <li><b>Shuffle sharding</b> gives each customer a random set of nodes, so two customers rarely share all of them.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box">
+      <svg viewBox="0 0 560 236" role="img" aria-label="A cell router sends customers to four independent cells. Cell 3 is down, so only a quarter of users are affected.">
+        <rect x="170" y="8" width="220" height="36" rx="8" class="b"/><text x="280" y="31" class="tb" text-anchor="middle">Cell router, by customer ID</text>
+        <line x1="230" y1="44" x2="78" y2="86" class="s" marker-end="url(#ah)"/>
+        <line x1="260" y1="44" x2="212" y2="86" class="s" marker-end="url(#ah)"/>
+        <line x1="300" y1="44" x2="348" y2="86" class="s" marker-end="url(#ah)"/>
+        <line x1="330" y1="44" x2="482" y2="86" class="s" marker-end="url(#ah)"/>
+        <g>
+          <rect x="20" y="90" width="115" height="110" rx="10" class="bs"/><text x="77" y="112" class="tb" text-anchor="middle">Cell 1</text>
+          <rect x="35" y="128" width="85" height="24" rx="5" class="b"/><text x="77" y="145" class="t" text-anchor="middle">app</text>
+          <rect x="35" y="160" width="85" height="24" rx="5" class="b"/><text x="77" y="177" class="t" text-anchor="middle">db</text>
+        </g>
+        <g>
+          <rect x="155" y="90" width="115" height="110" rx="10" class="bs"/><text x="212" y="112" class="tb" text-anchor="middle">Cell 2</text>
+          <rect x="170" y="128" width="85" height="24" rx="5" class="b"/><text x="212" y="145" class="t" text-anchor="middle">app</text>
+          <rect x="170" y="160" width="85" height="24" rx="5" class="b"/><text x="212" y="177" class="t" text-anchor="middle">db</text>
+        </g>
+        <g>
+          <rect x="290" y="90" width="115" height="110" rx="10" class="ba"/><text x="347" y="112" class="tb" text-anchor="middle">Cell 3</text>
+          <text x="347" y="152" class="ta" text-anchor="middle" style="font-size:22px">✕</text>
+          <text x="347" y="178" class="ta" text-anchor="middle">down</text>
+        </g>
+        <g>
+          <rect x="425" y="90" width="115" height="110" rx="10" class="bs"/><text x="482" y="112" class="tb" text-anchor="middle">Cell 4</text>
+          <rect x="440" y="128" width="85" height="24" rx="5" class="b"/><text x="482" y="145" class="t" text-anchor="middle">app</text>
+          <rect x="440" y="160" width="85" height="24" rx="5" class="b"/><text x="482" y="177" class="t" text-anchor="middle">db</text>
+        </g>
+        <text x="280" y="226" class="tm" text-anchor="middle">cell 3 fails: 25% of customers affected, 75% never notice</text>
+      </svg>
+      </div>
+      <figcaption>Cells cap the damage of any single failure. AWS uses this pattern for many core services.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Deterministic simulation testing</h3><label class="got"><input type="checkbox" id="k-l5-dst"><span>Got it</span></label></div>
+      <ul>
+        <li>Run the whole cluster in one thread, with a fake network, disk and clock.</li>
+        <li>A random seed drives every choice: delays, drops, crashes, message order.</li>
+        <li>A failing seed replays the exact same bug every time.</li>
+        <li>FoundationDB built its database this way. TigerBeetle and Antithesis use it today.</li>
+      </ul>
+      <span class="key">Turn "can't reproduce" into a seed number.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  S["Seed 8812"] --> SIM["Simulated network, disk, clock"]
+  F["Fault injector: drop, delay, crash, reorder"] --> SIM
+  SIM --> RUN["Run the whole cluster in one thread"]
+  RUN --> CHK{"Invariants hold?"}
+  CHK -->|"yes"| N["Try next seed"]
+  CHK -->|"no"| R["Replay seed 8812, debug step by step"]
+      </pre></div>
+      <figcaption>Millions of seeds explore event orders that real hardware almost never produces.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Jepsen and history checking</h3><label class="got"><input type="checkbox" id="k-l5-jepsen"><span>Got it</span></label></div>
+      <ul>
+        <li>Jepsen tests real databases from the outside, like a black box.</li>
+        <li>Clients run operations. A "nemesis" cuts the network, skews clocks and kills nodes.</li>
+        <li>A checker reads the recorded history and asks: could any legal order produce this?</li>
+        <li>It has found data loss in many popular databases. Read the reports at jepsen.io.</li>
+      </ul>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  C["Clients: reads, writes, transfers"] --> DB[("Database cluster")]
+  N["Nemesis: partitions, clock skew, kills"] --> DB
+  C --> H["Recorded history of every op"]
+  H --> K{"Checker: linearizable or serializable?"}
+  K -->|"no legal order exists"| A["Anomaly report"]
+  K -->|"ok"| P["Pass, for this run"]
+      </pre></div>
+      <figcaption>Jepsen proves bugs exist. It can never prove they are absent.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>Formal methods (TLA+)</h3><label class="got"><input type="checkbox" id="k-l5-tla"><span>Got it</span></label></div>
+      <ul>
+        <li>Write the design as a spec: states, actions, and rules that must always hold.</li>
+        <li>A model checker tries every order of steps in a small model.</li>
+        <li>It finds bugs that need 20+ precise steps. Humans miss those.</li>
+        <li>AWS reported using TLA+ on DynamoDB, S3 and other core systems.</li>
+      </ul>
+      <span class="key">Test the design before you write the code.</span>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart LR
+  D["Design idea"] --> S["TLA+ spec with invariants"]
+  S --> M["Model checker tries every order"]
+  M -->|"invariant broken"| T["Shortest trace to the bug"]
+  T --> D
+  M -->|"all states pass"| B["Build it"]
+      </pre></div>
+      <figcaption>The checker returns a step-by-step trace, so you see exactly how the design fails.</figcaption>
+    </figure>
+  </article>
+
+  <article class="concept">
+    <div class="c-text">
+      <div class="c-head"><h3>The paper ladder</h3><label class="got"><input type="checkbox" id="k-l5-papers"><span>Got it</span></label></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Paper</th><th>Year</th><th>Teaches</th></tr></thead>
+        <tbody>
+          <tr><td>Time, Clocks, and the Ordering of Events</td><td class="n">1978</td><td>Logical time</td></tr>
+          <tr><td>FLP impossibility</td><td class="n">1985</td><td>Limits of consensus</td></tr>
+          <tr><td>Paxos Made Simple</td><td class="n">2001</td><td>Consensus</td></tr>
+          <tr><td>GFS · MapReduce</td><td class="n">2003–04</td><td>Big data on cheap disks</td></tr>
+          <tr><td>Bigtable · Chubby</td><td class="n">2006</td><td>Wide-column store, locks</td></tr>
+          <tr><td>Dynamo</td><td class="n">2007</td><td>Leaderless, quorums</td></tr>
+          <tr><td>Kafka</td><td class="n">2011</td><td>The log</td></tr>
+          <tr><td>Spanner</td><td class="n">2012</td><td>Global transactions</td></tr>
+          <tr><td>The Tail at Scale</td><td class="n">2013</td><td>p99 at fan-out</td></tr>
+          <tr><td>Raft</td><td class="n">2014</td><td>Understandable consensus</td></tr>
+          <tr><td>Aurora</td><td class="n">2017</td><td>Log as the database</td></tr>
+          <tr><td>Metastable Failures</td><td class="n">2021</td><td>Self-sustaining outages</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <figure class="c-fig">
+      <div class="box"><pre class="mermaid">
+flowchart TD
+  A["Lamport clocks"] --> B["FLP"]
+  B --> C["Paxos"]
+  C --> D["GFS and MapReduce"]
+  D --> E["Bigtable and Chubby"]
+  E --> F["Dynamo"]
+  F --> G["Spanner"]
+  G --> H["Raft"]
+  H --> I["Aurora"]
+      </pre></div>
+      <figcaption>One reading path. Each paper answers a problem the one before it left open.</figcaption>
+    </figure>
+  </article>
+
+  <div class="watch">
+    <h3>Watch · L5</h3>
+    <ul>
+      <li><a href="https://www.youtube.com/watch?v=4fFDFbi3toc" target="_blank" rel="noopener"><span class="who">Will Wilson</span><span class="what">Testing Distributed Systems w/ Deterministic Simulation<small>How FoundationDB found bugs nobody else could.</small></span><span class="kind">talk</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=vFDjTd9G6Xo" target="_blank" rel="noopener"><span class="who">Kyle Kingsbury</span><span class="what">Call Me Maybe: The Perils of Network Partitions<small>The first Jepsen talk (RICON 2013).</small></span><span class="kind">talk</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=QdkS6ZjeR7Q" target="_blank" rel="noopener"><span class="who">Kyle Kingsbury</span><span class="what">Jepsen II: Linearizable Boogaloo<small>What consistency models really cost.</small></span><span class="kind">talk</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=OPJ_IcdSqig" target="_blank" rel="noopener"><span class="who">Kyle Kingsbury</span><span class="what">Black-box Isolation Checking with Elle<small>How to check transaction histories at scale (CMU Database Group).</small></span><span class="kind">talk</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=x7drE24geUw" target="_blank" rel="noopener"><span class="who">Martin Kleppmann</span><span class="what">CRDTs: The Hard Parts<small>Where simple CRDTs break, and the research that fixes them.</small></span><span class="kind">talk</span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=no5Im1daS-o" target="_blank" rel="noopener"><span class="who">USENIX ATC '14</span><span class="what">In Search of an Understandable Consensus Algorithm<small>The Raft paper talk.</small></span><span class="kind">talk</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ PRACTICE ============ -->
+<section class="practice" id="practice" style="--tc:var(--ink);--tt:var(--soft)">
+  <h2>Practice problems</h2>
+  <p class="lv-sub">Design each one on paper first. Then watch a walkthrough and compare.</p>
+  <figure class="c-fig" style="margin-top:16px">
+    <div class="box"><pre class="mermaid">
+flowchart LR
+  P["Pick a problem"] --> Q["Write requirements and numbers"]
+  Q --> D["Draw a v1 that works"]
+  D --> B["Find the bottleneck"]
+  B --> F["Fix it, name the trade-off"]
+  F --> B
+  F --> C["Compare with a walkthrough"]
+    </pre></div>
+    <figcaption>The practice loop. Most learning happens in the fix-and-trade-off step.</figcaption>
+  </figure>
+  <div class="probs">
+    <div style="--tc:var(--l1)"><b>L1</b><ul><li>URL shortener</li><li>Pastebin</li><li>Page view counter</li></ul></div>
+    <div style="--tc:var(--l2)"><b>L2</b><ul><li>Rate limiter</li><li>News feed</li><li>Notification system</li></ul></div>
+    <div style="--tc:var(--l3)"><b>L3</b><ul><li>Chat app</li><li>Ticket booking</li><li>Video upload pipeline</li></ul></div>
+    <div style="--tc:var(--l4)"><b>L4</b><ul><li>Payment system</li><li>Collaborative docs</li><li>Ride-hailing dispatch</li></ul></div>
+    <div style="--tc:var(--l5)"><b>L5</b><ul><li>Distributed KV store</li><li>Lock service</li><li>Global SQL database</li></ul></div>
+  </div>
+
+  <div class="watch" style="--tc:var(--muted);--tt:var(--soft);margin-top:28px">
+    <h3>Read</h3>
+    <ul>
+      <li><a href="https://github.com/donnemartin/system-design-primer" target="_blank" rel="noopener"><span class="who">L1–L2 · free</span><span class="what">The System Design Primer<small>Large GitHub guide with diagrams and practice questions.</small></span><span class="kind">repo</span></a></li>
+      <li><a href="https://bytebytego.com/" target="_blank" rel="noopener"><span class="who">L1–L3</span><span class="what">System Design Interview, Vol. 1 and 2 (Alex Xu)<small>Worked designs. Pairs with the ByteByteGo videos.</small></span><span class="kind">book</span></a></li>
+      <li><a href="https://dataintensive.net/" target="_blank" rel="noopener"><span class="who">L2–L5</span><span class="what">Designing Data-Intensive Applications (Martin Kleppmann)<small>The core book for this whole guide.</small></span><span class="kind">book</span></a></li>
+      <li><a href="https://aws.amazon.com/builders-library/" target="_blank" rel="noopener"><span class="who">L3–L5 · free</span><span class="what">Amazon Builders' Library<small>Retries, backoff, cells, load shedding, from AWS engineers.</small></span><span class="kind">articles</span></a></li>
+      <li><a href="https://jepsen.io/analyses" target="_blank" rel="noopener"><span class="who">L5 · free</span><span class="what">Jepsen analyses<small>Real database bugs, found and explained.</small></span><span class="kind">reports</span></a></li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<footer class="wrap">Video links checked October 2026. Latency figures are rough orders of magnitude. "Got it" ticks are saved in this browser only.</footer>
+
+<script>
+(function(){
+  var KEY = 'sdl-progress-v1', saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  var levels = ['l1','l2','l3','l4','l5'];
+  function update(){
+    levels.forEach(function(l){
+      var all = document.querySelectorAll('#' + l + ' .got input'), done = 0;
+      all.forEach(function(x){ if (x.checked) done++; });
+      var text = done + ' / ' + all.length + ' done';
+      var c = document.querySelector('[data-count="' + l + '"]'); if (c) c.textContent = text;
+      var p = document.querySelector('[data-pg="' + l + '"]'); if (p) p.textContent = text;
+    });
+  }
+  document.querySelectorAll('.got input').forEach(function(b){
+    if (saved[b.id]) b.checked = true;
+    b.addEventListener('change', function(){
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+  var links = [].slice.call(document.querySelectorAll('.rail a'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (!e.isIntersecting) return;
+        links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id); });
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    ['l1','l2','l3','l4','l5','practice'].forEach(function(id){ var s = document.getElementById(id); if (s) io.observe(s); });
+  }
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" integrity="sha256-YbM1pG3wWnzhyYN49g5fPnen+2CKEFaZfopkkwSpNtY=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  var root = document.documentElement;
+  if (!window.mermaid) { root.classList.remove('js'); return; }
+  var blocks = [].slice.call(document.querySelectorAll('pre.mermaid'));
+  blocks.forEach(function(b){ b.dataset.src = b.textContent; });
+  var dark = window.matchMedia('(prefers-color-scheme: dark)');
+  function tok(n){ return getComputedStyle(root).getPropertyValue(n).trim(); }
+  function render(){
+    blocks.forEach(function(b){ b.removeAttribute('data-processed'); b.textContent = b.dataset.src; });
+    var ink = tok('--ink'), muted = tok('--muted'), soft = tok('--soft'), panel = tok('--panel');
+    mermaid.initialize({
+      startOnLoad: false, securityLevel: 'strict', theme: 'base',
+      fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+      themeVariables: {
+        darkMode: dark.matches, fontSize: '14px',
+        background: panel, mainBkg: soft, primaryColor: soft, primaryTextColor: ink,
+        primaryBorderColor: muted, secondaryColor: panel, tertiaryColor: panel,
+        lineColor: muted, textColor: ink, nodeBorder: muted,
+        edgeLabelBackground: panel, clusterBkg: panel,
+        actorBkg: soft, actorBorder: muted, actorTextColor: ink, actorLineColor: muted,
+        signalColor: ink, signalTextColor: ink, labelBoxBkgColor: soft,
+        labelBoxBorderColor: muted, labelTextColor: ink, loopTextColor: ink,
+        noteBkgColor: panel, noteBorderColor: muted, noteTextColor: ink,
+        activationBkgColor: soft, activationBorderColor: muted
+      }
+    });
+    mermaid.run({ nodes: blocks, suppressErrors: true }).catch(function(){ root.classList.remove('js'); });
+  }
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(render);
+  if (dark.addEventListener) dark.addEventListener('change', render);
+})();
+</script>
+</body>
+</html>
