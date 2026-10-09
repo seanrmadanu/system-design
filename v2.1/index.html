@@ -2140,7 +2140,12 @@ function applyTransform(vw) {
   stage.style.height = Math.ceil(paper.offsetHeight * scale) + 'px';
 }
 let fitQueued = false;
-function queueFit() { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fit(); }); }
+function queueFit() {
+  if (fitQueued) return;
+  fitQueued = true;
+  const run = () => { if (!fitQueued) return; fitQueued = false; fit(); };
+  requestAnimationFrame(run); setTimeout(run, 150);   // timer covers views that pause animation frames
+}
 
 /* in-page links: scroll with the app bar in mind */
 function goTo(el, behavior) {
