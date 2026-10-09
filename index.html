@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="A five-level visual guide to system design, from one server to consensus and correctness testing, with diagrams and curated videos.">
+<meta name="description" content="System Design Ladder v2: a notebook you can write on, with real cases from big tech, diagrams, videos and an abbreviations glossary.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231D56D2'/%3E%3Cpath d='M10 6v20M22 6v20M10 11h12M10 16h12M10 21h12' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
 <script>document.documentElement.classList.add('js')</script>
 <style>
@@ -15,99 +15,117 @@ img{max-width:100%}
 /* hide raw diagram source until mermaid draws it */
 .js pre.mermaid:not([data-processed]){visibility:hidden;min-height:140px}
 </style>
-<title>System Design Ladder</title>
+<title>System Design Ladder v2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: whiteboard ladder. Sticky level rail on top, one section per level, each concept = short text column + diagram column. Marker colors encode level. */
+/* Layout: a fixed 960px notebook page, scaled to the screen so handwriting stays on the same words on every device.
+   Content column 640 + note margin 228. App bar fixed on top, tool bar floating at the bottom. Marker colors encode level. */
 :root{
-  --bg:#F4F6F9; --panel:#FFFFFF; --ink:#141C26; --muted:#556172; --line:#D7DDE5; --soft:#ECF0F5;
+  --bg:#E4E8EE; --paper:#FCFCFD; --panel:#FFFFFF; --ink:#141C26; --muted:#556172; --line:#D7DDE5; --soft:#EEF2F7;
   --l1:#17834A; --l2:#1D56D2; --l3:#7438CC; --l4:#B05000; --l5:#C0262D;
   --l1t:#E4F3EA; --l2t:#E6EDFC; --l3t:#EFE8FA; --l4t:#FAEDE1; --l5t:#FAE6E7;
+  --hl:#FFD83D; --hlop:.5; --hlblend:multiply; --sel:rgba(116,56,204,.08); --shadow:rgba(16,24,40,.14);
   --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#10141A; --panel:#171D25; --ink:#E4E9F0; --muted:#97A2B2; --line:#29323E; --soft:#1D242E;
+  --bg:#0A0D11; --paper:#12171E; --panel:#181E27; --ink:#E4E9F0; --muted:#97A2B2; --line:#2A333F; --soft:#1E252F;
   --l1:#52C487; --l2:#7CA4FF; --l3:#B595FF; --l4:#F2A25C; --l5:#FF7B80;
-  --l1t:#14281D; --l2t:#162139; --l3t:#221A36; --l4t:#2E2116; --l5t:#311A1D; color-scheme:dark}}
+  --l1t:#14281D; --l2t:#162139; --l3t:#221A36; --l4t:#2E2116; --l5t:#311A1D;
+  --hl:#E8C547; --hlop:.3; --hlblend:normal; --sel:rgba(181,149,255,.14); --shadow:rgba(0,0,0,.5); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#10141A; --panel:#171D25; --ink:#E4E9F0; --muted:#97A2B2; --line:#29323E; --soft:#1D242E;
+  --bg:#0A0D11; --paper:#12171E; --panel:#181E27; --ink:#E4E9F0; --muted:#97A2B2; --line:#2A333F; --soft:#1E252F;
   --l1:#52C487; --l2:#7CA4FF; --l3:#B595FF; --l4:#F2A25C; --l5:#FF7B80;
-  --l1t:#14281D; --l2t:#162139; --l3t:#221A36; --l4t:#2E2116; --l5t:#311A1D; color-scheme:dark}
+  --l1t:#14281D; --l2t:#162139; --l3t:#221A36; --l4t:#2E2116; --l5t:#311A1D;
+  --hl:#E8C547; --hlop:.3; --hlblend:normal; --sel:rgba(181,149,255,.14); --shadow:rgba(0,0,0,.5); color-scheme:dark}
 
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);-webkit-font-smoothing:antialiased}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.55 var(--body);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 a{color:inherit}
-.wrap{max-width:1140px;margin:0 auto;padding-inline:clamp(16px,4vw,36px)}
-h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0}
 code,.mono{font-family:var(--mono)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--l2);outline-offset:2px}
 
-/* top */
-.top{padding-block:40px 20px;display:grid;gap:14px}
+/* ---------- app bar (not scaled) ---------- */
+.appbar{position:fixed;top:0;left:0;right:0;z-index:40;padding-top:env(safe-area-inset-top,0px);background:var(--paper);border-bottom:1px solid var(--line)}
+.appbar .in{display:flex;align-items:center;gap:6px;height:48px;padding-inline:12px;overflow-x:auto;scrollbar-width:none}
+.appbar .in::-webkit-scrollbar{display:none}
+.brand{font:800 15px/1 var(--display);white-space:nowrap;margin-right:8px;text-decoration:none}
+.brand small{font:500 11px var(--mono);color:var(--muted);margin-left:4px}
+.pill{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;border:1.5px solid var(--line);font:500 12.5px/1 var(--mono);text-decoration:none;background:var(--panel);white-space:nowrap}
+.pill i{width:9px;height:9px;border-radius:50%;background:var(--tc)}
+.pill em{font-style:normal;color:var(--muted)}
+.pill:hover,.pill:focus-visible{border-color:var(--tc);outline:none}
+.pill.on{background:var(--tt);border-color:var(--tc)}
+.sync{margin-left:auto;padding-left:10px;font:500 12px var(--mono);color:var(--muted);white-space:nowrap}
+
+/* ---------- stage + paper ---------- */
+#stage{position:relative;margin-top:calc(48px + env(safe-area-inset-top,0px))}
+#stage.scaled{overflow:hidden}
+#paper{position:relative;margin:0 auto;width:960px;transform-origin:0 0;background:var(--paper);padding:40px 32px 160px;box-shadow:0 1px 2px var(--shadow),0 12px 40px var(--shadow)}
+#paper::before{content:"";position:absolute;top:0;bottom:0;left:686px;border-left:1.5px dashed var(--line);pointer-events:none}
+#paper::after{content:"margin · notes";position:absolute;top:14px;left:700px;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);pointer-events:none}
+#paper > *{width:640px}
+#paper > .wide{width:896px}
+#ink{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:5}
+body.inking #ink{pointer-events:auto;cursor:crosshair}
+body.inking #paper{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.stroke{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.c-ink{stroke:var(--ink)} .c-blue{stroke:var(--l2)} .c-red{stroke:var(--l5)} .c-green{stroke:var(--l1)}
+.stroke.hl{stroke:var(--hl);opacity:var(--hlop);mix-blend-mode:var(--hlblend);stroke-linecap:butt}
+.ask-rect{fill:var(--sel);stroke:var(--l3);stroke-width:1.5;stroke-dasharray:6 4}
+
+/* ---------- top of page ---------- */
+.top{padding-block:4px 20px;display:grid;gap:12px}
 .eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
-.top h1{font-size:clamp(34px,6vw,60px);font-weight:800;line-height:1.02;letter-spacing:-.02em}
-.lede{margin:0;max-width:60ch;color:var(--muted);font-size:17px}
-
-/* level cards */
-.levels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding-block:8px 8px}
-.lvcard{display:grid;gap:6px;align-content:start;padding:14px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);text-decoration:none;border-top:5px solid var(--tc)}
+.top h1{font-size:50px;font-weight:800;line-height:1.02;letter-spacing:-.02em}
+.lede{margin:0;color:var(--muted);font-size:17px}
+.howto{margin:0;padding:12px 14px;border:1.5px dashed var(--line);border-radius:10px;font-size:15px;line-height:1.5}
+.howto b{font-weight:600}
+.levels{display:grid;gap:6px;margin-top:6px}
+.lvcard{display:grid;grid-template-columns:44px 104px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);text-decoration:none}
 .lvcard:hover,.lvcard:focus-visible{border-color:var(--tc);outline:none}
-.lvcard .k{font:600 12px/1 var(--mono);color:var(--tc);letter-spacing:.06em}
-.lvcard b{font:700 19px/1.15 var(--display)}
-.lvcard span{font-size:13.5px;color:var(--muted);line-height:1.4}
-.lvcard .pg{font:500 12px/1 var(--mono);color:var(--muted);margin-top:4px}
-@media (max-width:900px){.levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:420px){.levels{grid-template-columns:minmax(0,1fr)}}
+.lvcard .k{font:600 14px/1 var(--mono);color:var(--tc)}
+.lvcard b{font:700 18px/1.1 var(--display)}
+.lvcard span{font-size:14px;color:var(--muted);line-height:1.35}
+.lvcard .pg{font:500 12px/1 var(--mono);white-space:nowrap}
 
-/* sticky rail */
-.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
-.rail .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
-.rail a{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;border:1.5px solid var(--line);font:500 13px/1 var(--mono);text-decoration:none;background:var(--panel)}
-.rail a i{width:9px;height:9px;border-radius:50%;background:var(--tc)}
-.rail a:hover,.rail a:focus-visible{border-color:var(--tc);outline:none}
-.rail a.on{background:var(--tt);border-color:var(--tc)}
-
-/* map */
+/* ---------- map ---------- */
 .map{margin-block:22px 8px;padding:18px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel)}
 .map h2{font-size:22px}
-.map p{margin:6px 0 0;color:var(--muted);font-size:14.5px}
+.map p{margin:6px 0 0;color:var(--muted);font-size:15px}
 
-/* level section */
-.level{padding-block:44px 8px;scroll-margin-top:56px}
-.lv-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;padding-bottom:18px;border-bottom:3px solid var(--tc)}
-.lv-tag{font:600 clamp(30px,5vw,46px)/1 var(--mono);color:var(--tc)}
-.lv-head h2{font-size:clamp(28px,4.4vw,42px);font-weight:800;letter-spacing:-.015em;line-height:1.05}
-.lv-sub{margin:4px 0 0;color:var(--muted);max-width:68ch}
+/* ---------- level sections ---------- */
+.level{padding-top:48px}
+.lv-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;padding-bottom:16px;border-bottom:3px solid var(--tc)}
+.lv-tag{font:600 44px/1 var(--mono);color:var(--tc)}
+.lv-head h2{font-size:38px;font-weight:800;letter-spacing:-.015em;line-height:1.05}
+.lv-sub{margin:4px 0 0;color:var(--muted)}
 .lv-sub b{color:var(--ink);font-weight:600}
-.lv-count{font:500 13px/1 var(--mono);color:var(--tc);background:var(--tt);padding:7px 10px;border-radius:999px;white-space:nowrap}
-@media (max-width:560px){.lv-head{grid-template-columns:auto minmax(0,1fr)}.lv-count{grid-column:1/-1;justify-self:start}}
+.lv-count{font:500 12.5px/1 var(--mono);color:var(--tc);background:var(--tt);padding:7px 10px;border-radius:999px;white-space:nowrap}
 
-/* concept */
-.concept{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(16px,3vw,36px);padding-block:26px;border-bottom:1px solid var(--line);scroll-margin-top:60px}
-@media (max-width:860px){.concept{grid-template-columns:minmax(0,1fr)}}
-.c-text{min-width:0}
+/* ---------- concept ---------- */
+.concept{display:block;padding-block:28px;border-bottom:1px solid var(--line)}
 .c-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
-.c-head h3{font-size:22px;font-weight:700;line-height:1.15}
-.c-text ul{margin:10px 0 0;padding-left:18px;display:grid;gap:6px}
+.c-head h3{font-size:24px;font-weight:700;line-height:1.15}
+.c-text ul{margin:10px 0 0;padding-left:20px;display:grid;gap:6px}
 .c-text li::marker{color:var(--tc)}
 .c-text p{margin:10px 0 0}
 .c-text b{font-weight:600}
-.key{display:inline-block;margin-top:12px;font:500 13px/1.4 var(--mono);color:var(--tc);background:var(--tt);padding:6px 9px;border-radius:6px}
-.got{display:flex;align-items:center;gap:6px;flex:0 0 auto;font:500 12px/1 var(--mono);color:var(--muted);cursor:pointer;user-select:none;padding:6px 8px;border:1.5px solid var(--line);border-radius:999px}
-.got input{accent-color:var(--tc);margin:0;width:15px;height:15px}
+.key{display:inline-block;margin-top:12px;font:500 13.5px/1.4 var(--mono);color:var(--tc);background:var(--tt);padding:6px 9px;border-radius:6px}
+.got{display:flex;align-items:center;gap:6px;flex:0 0 auto;font:500 12px/1 var(--mono);color:var(--muted);cursor:pointer;-webkit-user-select:none;user-select:none;padding:7px 9px;border:1.5px solid var(--line);border-radius:999px}
+.got input{accent-color:var(--tc);margin:0;width:16px;height:16px}
 .got:has(input:checked){border-color:var(--tc);color:var(--tc);background:var(--tt)}
-.got:focus-within{outline:2px solid var(--tc);outline-offset:2px}
-
-/* figures */
 figure{margin:0;min-width:0}
-.c-fig{display:grid;gap:8px;align-content:start}
+.c-fig{display:grid;gap:8px;margin-top:16px}
 .c-fig .box{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
 .c-fig svg{display:block;width:100%;height:auto;color:var(--ink)}
-figcaption{font-size:13.5px;color:var(--muted);line-height:1.45}
-@media (max-width:520px){.c-fig .box > svg[role="img"]{min-width:460px}}
+figcaption{font-size:14px;color:var(--muted);line-height:1.45}
 pre.mermaid{margin:0;background:transparent;text-align:center;font-family:var(--body)}
 
 /* svg vocabulary */
@@ -118,49 +136,109 @@ pre.mermaid{margin:0;background:transparent;text-align:center;font-family:var(--
 .b{fill:var(--panel);stroke:currentColor;stroke-width:1.6}
 .bs{fill:var(--soft);stroke:currentColor;stroke-width:1.6}
 .ba{fill:var(--tt);stroke:var(--tc);stroke-width:2}
-.fa{fill:var(--tc)}
-.fs{fill:var(--soft)}
-.fp{fill:var(--panel)}
-.fi{fill:currentColor}
+.fa{fill:var(--tc)} .fs{fill:var(--soft)} .fp{fill:var(--panel)} .fi{fill:currentColor}
 .t{fill:currentColor;font:500 13px var(--body)}
 .tb{fill:currentColor;font:600 13px var(--body)}
 .tm{fill:var(--muted);font:500 11.5px var(--mono)}
 .ta{fill:var(--tc);font:600 12px var(--mono)}
 .tw{fill:var(--panel);font:600 11px var(--mono)}
 
-/* tables */
+/* tables + worked numbers */
 .tbl{overflow-x:auto;margin-top:12px}
-table{border-collapse:collapse;width:100%;font-size:14px;min-width:420px}
+table{border-collapse:collapse;width:100%;font-size:15px}
 th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font:600 12px/1.3 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.calc{margin-top:12px;font:14px/1.7 var(--mono);background:var(--soft);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:pre}
 
-/* worked example */
-.calc{margin-top:12px;font:13.5px/1.7 var(--mono);background:var(--soft);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:pre}
+/* ---------- real case ---------- */
+.case{margin-top:18px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel)}
+.case-h{display:flex;gap:10px;align-items:baseline;padding:9px 14px;border-bottom:1px dashed var(--line);font:600 11.5px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--tc)}
+.case-h b{font:700 15px/1.2 var(--body);letter-spacing:0;text-transform:none;color:var(--ink)}
+.case-h .yr{margin-left:auto;color:var(--muted);font-weight:500;letter-spacing:.02em}
+.case-b{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;padding:12px 14px 6px}
+.case-b h4{font:600 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.case-b p{margin:0;font-size:15px;line-height:1.5}
+.case-s{padding:6px 14px 12px;font-size:13px;color:var(--muted)}
+.case-s a{color:var(--muted)}
 
-/* watch */
+/* ---------- watch / practice / glossary ---------- */
 .watch{margin-top:26px;padding:18px;border-radius:12px;background:var(--tt);border:1.5px solid var(--tc)}
-.watch h3{font-size:20px;display:flex;gap:10px;align-items:center}
+.watch h3{font-size:20px}
 .watch ul{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:2px}
-.watch li a{display:grid;grid-template-columns:7.5em minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:9px 8px;border-radius:8px;text-decoration:none}
+.watch li a{display:grid;grid-template-columns:8em minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:9px 8px;border-radius:8px;text-decoration:none}
 .watch li a:hover,.watch li a:focus-visible{background:var(--panel);outline:none}
 .watch .who{font:500 12px/1.3 var(--mono);color:var(--tc)}
 .watch .what{font-weight:500}
-.watch .what small{display:block;color:var(--muted);font-weight:400;font-size:13px}
+.watch .what small{display:block;color:var(--muted);font-weight:400;font-size:13.5px}
 .watch .kind{font:500 11px/1 var(--mono);color:var(--muted);border:1px solid var(--line);background:var(--panel);padding:4px 6px;border-radius:5px;white-space:nowrap}
-@media (max-width:560px){.watch li a{grid-template-columns:minmax(0,1fr) auto}.watch .who{grid-column:1/-1}}
-
-/* practice + footer */
-.practice{padding-block:44px 10px}
-.practice h2{font-size:clamp(26px,4vw,36px);font-weight:800}
-.probs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:16px}
-.probs div{background:var(--panel);border:1.5px solid var(--line);border-top:4px solid var(--tc);border-radius:10px;padding:12px}
+.practice{padding-top:48px}
+.practice h2,.gloss h2{font-size:34px;font-weight:800}
+.probs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:16px}
+.probs div{background:var(--panel);border:1.5px solid var(--line);border-top:4px solid var(--tc);border-radius:10px;padding:10px}
 .probs b{font:600 12px var(--mono);color:var(--tc)}
-.probs ul{margin:8px 0 0;padding-left:16px;font-size:14px;display:grid;gap:4px}
-@media (max-width:900px){.probs{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:420px){.probs{grid-template-columns:minmax(0,1fr)}}
-footer{padding-block:30px 50px;color:var(--muted);font-size:13.5px}
+.probs ul{margin:8px 0 0;padding-left:15px;font-size:13.5px;display:grid;gap:4px}
+.gloss{padding-top:48px}
+.gloss table{margin-top:14px;font-size:14.5px}
+.gloss td:first-child{font:600 13.5px/1.4 var(--mono);white-space:nowrap;padding-right:14px}
+.gloss td:nth-child(2){font-weight:600;min-width:170px}
+.gloss td:nth-child(3){color:var(--muted)}
+footer{padding-top:30px;color:var(--muted);font-size:14px}
+
+/* ---------- abbreviations ---------- */
+abbr.ab{text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:2px;cursor:help}
+
+/* ---------- answer cards (inside the page) ---------- */
+.qa{margin:14px 0 4px;border:1.5px solid var(--l3);border-radius:12px;background:var(--panel);padding:12px 14px}
+.qa-h{display:flex;gap:10px;align-items:baseline}
+.qa-h .tag{flex:0 0 auto;font:600 11px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--l3)}
+.qa-q{font-weight:600;font-size:15.5px}
+.qa-a{margin-top:6px;font-size:16px;line-height:1.55}
+.qa-a p{margin:6px 0} .qa-a ul,.qa-a ol{margin:6px 0;padding-left:22px}
+.qa-a code{font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.qa-a pre{background:var(--soft);padding:8px 10px;border-radius:8px;overflow-x:auto;font-size:13px}
+.qa-a .wait{color:var(--muted);font-style:italic}
+.qa-x{display:flex;gap:8px;margin-top:8px}
+
+/* ---------- floating UI (not scaled) ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:9px;border:1.5px solid var(--line);background:var(--panel);font:500 14px var(--body);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.btn.small{min-height:30px;padding:3px 10px;font-size:13px}
+.btn.danger{color:var(--l5)}
+.toolbar{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:2px;padding:6px;border-radius:16px;background:var(--panel);border:1px solid var(--line);box-shadow:0 8px 28px var(--shadow);max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none}
+.toolbar::-webkit-scrollbar{display:none}
+.tool{position:relative;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:54px;height:52px;padding:4px 6px;border:0;border-radius:11px;background:transparent;font:500 11px/1 var(--body);cursor:pointer}
+.tool svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tool[aria-pressed="true"]{background:var(--soft);color:var(--l2);box-shadow:inset 0 0 0 1.5px var(--l2)}
+.tool:disabled{opacity:.4;cursor:default}
+.tool b{position:absolute;top:3px;right:6px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--l3);color:var(--panel);font:600 10px/17px var(--mono)}
+.tool b:empty{display:none}
+.sw{display:flex;gap:7px;padding:0 6px}
+.sw button{width:26px;height:26px;border-radius:50%;padding:0;border:3px solid var(--panel);box-shadow:0 0 0 1.5px var(--line);cursor:pointer}
+.sw button[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--ink)}
+.sw [data-color="ink"]{background:var(--ink)} .sw [data-color="blue"]{background:var(--l2)} .sw [data-color="red"]{background:var(--l5)} .sw [data-color="green"]{background:var(--l1)}
+.sep{flex:0 0 auto;width:1px;height:30px;background:var(--line);margin:0 4px}
+.pop{position:fixed;z-index:60;width:min(380px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 36px var(--shadow);padding:12px;font-size:15px}
+.pop h4{font:700 16px var(--display);margin-bottom:6px}
+.pop p{margin:0 0 8px;color:var(--muted);font-size:14px}
+.pop textarea,.drawer textarea{width:100%;min-height:96px;resize:vertical;padding:10px;border:1.5px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font:16px/1.4 var(--body)}
+.pop .row,.drawer .row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.pop .ab-k{font:700 18px var(--mono)}
+.pop .ab-f{font-weight:600;margin:2px 0 4px}
+.drawer{position:fixed;top:calc(48px + env(safe-area-inset-top,0px));right:0;bottom:0;width:min(420px,100vw);z-index:45;background:var(--panel);border-left:1px solid var(--line);box-shadow:-10px 0 30px var(--shadow);display:flex;flex-direction:column}
+.drawer header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.drawer header h3{font-size:18px;margin-right:auto}
+.drawer .ask{padding:12px 14px;border-bottom:1px solid var(--line)}
+.drawer .list{flex:1;overflow-y:auto;padding:8px 14px calc(90px + env(safe-area-inset-bottom,0px))}
+.drawer .item{padding:12px 0;border-bottom:1px solid var(--line)}
+.drawer .item .meta{font:500 11.5px var(--mono);color:var(--muted)}
+.drawer .item .q{font-weight:600;margin:4px 0}
+.drawer .empty{color:var(--muted);font-size:14px;padding:16px 0}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:55;max-width:calc(100vw - 24px);padding:8px 14px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:14px;box-shadow:0 6px 20px var(--shadow)}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+.scaled #paper{position:absolute;top:0;left:0;margin:0}
 </style>
 </head>
 <body>
@@ -179,10 +257,14 @@ footer{padding-block:30px 50px;color:var(--muted);font-size:13.5px}
   </defs>
 </svg>
 
-<header class="top wrap">
-  <p class="eyebrow">49 concepts · 51 diagrams · 31 links</p>
+<div class="appbar"><div class="in"><a class="brand" href="#top">System Design Ladder <small>v2</small></a><a class="pill" data-l="l1" href="#l1" style="--tc:var(--l1);--tt:var(--l1t)"><i></i>L1 <em>0/10</em></a><a class="pill" data-l="l2" href="#l2" style="--tc:var(--l2);--tt:var(--l2t)"><i></i>L2 <em>0/10</em></a><a class="pill" data-l="l3" href="#l3" style="--tc:var(--l3);--tt:var(--l3t)"><i></i>L3 <em>0/10</em></a><a class="pill" data-l="l4" href="#l4" style="--tc:var(--l4);--tt:var(--l4t)"><i></i>L4 <em>0/9</em></a><a class="pill" data-l="l5" href="#l5" style="--tc:var(--l5);--tt:var(--l5t)"><i></i>L5 <em>0/10</em></a><a class="pill" href="#practice" style="--tc:var(--muted);--tt:var(--soft)"><i></i>Practice</a><a class="pill" href="#glossary" style="--tc:var(--muted);--tt:var(--soft)"><i></i>A–Z</a><span class="sync" id="sync">Loading…</span></div></div>
+
+<div id="stage"><div id="paper">
+<header class="top" id="top" data-anchor="top">
+  <p class="eyebrow">49 concepts · 49 real cases · 51 diagrams · 110 abbreviations explained</p>
   <h1>System design in five levels</h1>
-  <p class="lede">Each level adds a new problem. Each concept gets a few bullets and one diagram. Videos sit at the end of each level. Tick "Got it" to track progress. Ticks stay in this browser only.</p>
+  <p class="lede">Each level adds a new problem. Each concept gets a few bullets and one diagram. Videos sit at the end of each level. Tick "Got it" to track progress.</p>
+  <p class="howto"><b>Write on the page.</b> Apple Pencil writes anywhere, fingers scroll. Pick Pen, Highlight or Eraser in the bar at the bottom. <b>Ask</b>, then draw a box around anything, and Claude answers right there. Tap a dotted-underlined abbreviation to see its full form.</p>
   <nav class="levels" aria-label="Levels">
     <a class="lvcard" href="#l1" style="--tc:var(--l1)"><span class="k">L1</span><b>Basics</b><span>One server, then a few. Problem: one box can't take the load.</span><span class="pg" data-pg="l1">0 / 10 done</span></a>
     <a class="lvcard" href="#l2" style="--tc:var(--l2)"><span class="k">L2</span><b>Mid</b><span>Scale the data. Problem: the database is the bottleneck.</span><span class="pg" data-pg="l2">0 / 10 done</span></a>
@@ -190,26 +272,16 @@ footer{padding-block:30px 50px;color:var(--muted);font-size:13.5px}
     <a class="lvcard" href="#l4" style="--tc:var(--l4)"><span class="k">L4</span><b>Expert</b><span>Distributed systems theory. Problem: clocks lie, nodes die mid-step.</span><span class="pg" data-pg="l4">0 / 9 done</span></a>
     <a class="lvcard" href="#l5" style="--tc:var(--l5)"><span class="k">L5</span><b>Hardcore</b><span>Prove it is correct. Problem: bugs hide in rare event orders.</span><span class="pg" data-pg="l5">0 / 10 done</span></a>
   </nav>
+  <p class="note">Also: <a href="#practice">Practice problems</a> · <a href="#glossary">Abbreviations A–Z</a></p>
 </header>
 
-<div class="rail" aria-label="Jump to level">
-  <div class="wrap">
-    <a href="#l1" style="--tc:var(--l1);--tt:var(--l1t)"><i></i>L1 Basics</a>
-    <a href="#l2" style="--tc:var(--l2);--tt:var(--l2t)"><i></i>L2 Mid</a>
-    <a href="#l3" style="--tc:var(--l3);--tt:var(--l3t)"><i></i>L3 Advanced</a>
-    <a href="#l4" style="--tc:var(--l4);--tt:var(--l4t)"><i></i>L4 Expert</a>
-    <a href="#l5" style="--tc:var(--l5);--tt:var(--l5t)"><i></i>L5 Hardcore</a>
-    <a href="#practice" style="--tc:var(--muted);--tt:var(--soft)"><i></i>Practice</a>
-  </div>
-</div>
 
-<main class="wrap">
-<section class="map" aria-labelledby="map-h">
+<section class="map wide" aria-labelledby="map-h" data-anchor="map">
   <h2 id="map-h">The whole map</h2>
-  <p>A typical web system. The tag on each part shows the level where you learn it. L5 is not a box: it is proof that all of this still works when any part fails.</p>
+  <p>A typical web system. Each tag shows the level where you learn that part. L1–L4 each add parts. L5 adds no part: it breaks parts on purpose (the red marks) and proves the whole system still works. So L5 is the frame around everything.</p>
   <figure style="margin-top:12px">
   <div style="overflow-x:auto">
-  <svg viewBox="0 0 980 330" role="img" aria-label="Map of a web system: client, DNS, CDN, load balancer, app servers, cache, database leader, read replicas, shards, queue, workers and a second region, each tagged with a level from L1 to L4." style="min-width:680px;display:block;width:100%;height:auto;color:var(--ink)">
+  <svg viewBox="0 0 980 372" role="img" aria-label="Map of a web system: client, DNS, CDN, load balancer, app servers, cache, database leader, read replicas, shards, queue, workers and a second region, each tagged with a level from L1 to L4. A red L5 frame with fault marks surrounds the whole system." style="min-width:680px;display:block;width:100%;height:auto;color:var(--ink)">
     <!-- region A frame -->
     <rect x="150" y="12" width="640" height="306" rx="12" class="sd" style="stroke:var(--muted)"/>
     <text x="164" y="32" class="tm">region A</text>
@@ -255,6 +327,8 @@ footer{padding-block:30px 50px;color:var(--muted);font-size:13.5px}
     <g style="--tc:var(--l3)"><rect x="748" y="242" width="30" height="18" rx="9" class="fa"/><text x="763" y="255" class="tw" text-anchor="middle">L3</text></g>
     <g style="--tc:var(--l4)"><rect x="946" y="92" width="30" height="18" rx="9" class="fa"/><text x="961" y="105" class="tw" text-anchor="middle">L4</text></g>
     <text x="570" y="212" class="tm" text-anchor="middle">shards: L2</text>
+  
+    <g style="--tc:var(--l5)"><rect x="3" y="3" width="974" height="332" rx="14" class="sa" style="stroke-dasharray:9 6"/><rect x="3" y="346" width="30" height="18" rx="9" class="fa"/><text x="18" y="359" class="tw" text-anchor="middle">L5</text><text x="42" y="359" class="ta">break every part on purpose, then prove the system still works</text><circle cx="797" cy="164" r="8" class="fa"/><path d="M794 161l6 6M800 161l-6 6" style="stroke:var(--panel)" stroke-width="1.8"/><text x="790" y="206" class="ta" text-anchor="end">lost message</text><circle cx="510" cy="188" r="8" class="fa"/><path d="M507 185l6 6M513 185l-6 6" style="stroke:var(--panel)" stroke-width="1.8"/><text x="497" y="208" class="ta" text-anchor="end">crash</text><circle cx="340" cy="140" r="8" class="fa"/><path d="M337 137l6 6M343 137l-6 6" style="stroke:var(--panel)" stroke-width="1.8"/><text x="338" y="122" class="ta" text-anchor="middle">GC pause</text><circle cx="836" cy="210" r="8" class="fa"/><path d="M833 207l6 6M839 207l-6 6" style="stroke:var(--panel)" stroke-width="1.8"/><text x="848" y="214" class="ta">clock drift</text></g>
   </svg>
   </div>
   </figure>
@@ -262,14 +336,14 @@ footer{padding-block:30px 50px;color:var(--muted);font-size:13.5px}
 
 <!-- ============ L1 ============ -->
 <section class="level" id="l1" style="--tc:var(--l1);--tt:var(--l1t)">
-  <div class="lv-head">
+  <div class="lv-head" data-anchor="lvh-l1">
     <span class="lv-tag">L1</span>
     <div><h2>Basics</h2><p class="lv-sub">One server, then a few. <b>New problem:</b> one machine can't handle the traffic.</p></div>
     <span class="lv-count" data-count="l1">0 / 10 done</span>
   </div>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-what:t">
       <div class="c-head"><h3>What system design is</h3><label class="got"><input type="checkbox" id="k-l1-what"><span>Got it</span></label></div>
       <ul>
         <li>You turn a fuzzy goal into parts (boxes) and data paths (arrows).</li>
@@ -279,7 +353,7 @@ footer{padding-block:30px 50px;color:var(--muted);font-size:13.5px}
       </ul>
       <span class="key">Rule: say the trade-off out loud.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-what:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   A["Requirements"] --> B["Constraints: users, data, latency"]
@@ -290,10 +364,11 @@ flowchart LR
       </pre></div>
       <figcaption>The design loop. You repeat it every time a number changes.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-what:c"><div class="case-h">Real case <b>Twitter</b><span class="yr">2008–2013</span></div><div class="case-b"><div><h4>What happened</h4><p>Twitter ran as one Ruby on Rails app on MySQL. Traffic spikes, like the 2010 World Cup, kept taking it down, and users saw the &quot;Fail Whale&quot; error page.</p></div><div><h4>The fix</h4><p>Twitter rebuilt the system as many separate services on the JVM. In 2013 it handled a record 143,199 tweets in one second with no problems.</p></div></div><div class="case-s">Source: <a href="https://blog.x.com/engineering/en_us/a/2013/new-tweets-per-second-record-and-how" target="_blank" rel="noopener">Twitter engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-req:t">
       <div class="c-head"><h3>Life of a request</h3><label class="got"><input type="checkbox" id="k-l1-req"><span>Got it</span></label></div>
       <ul>
         <li><b>DNS</b> turns a name into an IP address.</li>
@@ -303,7 +378,7 @@ flowchart LR
       </ul>
       <span class="key">Every arrow here adds latency.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-req:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant B as Browser
@@ -320,10 +395,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>One page load. Caches can skip the DNS step and the database step.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-req:c"><div class="case-h">Real case <b>Facebook (Meta)</b><span class="yr">2021</span></div><div class="case-b"><div><h4>What happened</h4><p>A maintenance command cut every link in Facebook&#x27;s backbone network. Its DNS servers then withdrew their BGP routes, so nobody could look up facebook.com. Facebook, Instagram and WhatsApp were down for about 6 hours.</p></div><div><h4>The fix</h4><p>Engineers went into the data centers in person to bring the network back. Meta then committed to stronger safety checks, testing and recovery drills.</p></div></div><div class="case-s">Source: <a href="https://engineering.fb.com/2021/10/05/networking-traffic/outage-details/" target="_blank" rel="noopener">Meta engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-lat:t">
       <div class="c-head"><h3>Latency numbers</h3><label class="got"><input type="checkbox" id="k-l1-lat"><span>Got it</span></label></div>
       <ul>
         <li>Memory is about 1,000× faster than SSD.</li>
@@ -332,7 +408,7 @@ sequenceDiagram
       </ul>
       <span class="key">Cache in RAM. Keep data close to users.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-lat:f">
       <div class="box">
       <svg viewBox="0 0 560 318" role="img" aria-label="Log-scale latency chart: L1 cache 1 nanosecond, RAM 100 nanoseconds, SSD read 100 microseconds, data center round trip 500 microseconds, disk seek 10 milliseconds, US to Europe round trip 150 milliseconds.">
         <g class="sm" style="stroke-dasharray:2 4">
@@ -350,10 +426,11 @@ sequenceDiagram
       </div>
       <figcaption>Log scale: each grid step is 1,000×. The second label scales time by one billion: if an L1 read took 1 second, a US–Europe trip would take 5 years. Values are rough.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-lat:c"><div class="case-h">Real case <b>Google</b><span class="yr">2009</span></div><div class="case-b"><div><h4>What happened</h4><p>In a test, Google added 100–400 ms of delay to search results. Users searched 0.2–0.6% less, and some kept searching less even after the delay was gone.</p></div><div><h4>The fix</h4><p>Google made speed a core goal. It later built SPDY and QUIC, which became HTTP/2 and HTTP/3, to cut network round trips.</p></div></div><div class="case-s">Source: <a href="https://research.google/blog/speed-matters/" target="_blank" rel="noopener">Google Research blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-math:t">
       <div class="c-head"><h3>Back-of-envelope math</h3><label class="got"><input type="checkbox" id="k-l1-math"><span>Got it</span></label></div>
       <ul>
         <li>Estimate load before you pick parts.</li>
@@ -366,7 +443,7 @@ peak ≈ 3 × avg       = ~3,000 req/s
 1 KB × 100M          = 100 GB/day stored
 100 GB × 365         = ~36 TB/year</div>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-math:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   A["10M daily users"] -->|"x 10 requests"| B["100M per day"]
@@ -376,10 +453,11 @@ flowchart LR
       </pre></div>
       <figcaption>Two numbers drive most designs: requests per second and bytes stored.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-math:c"><div class="case-h">Real case <b>Niantic + Google Cloud (Pokémon GO)</b><span class="yr">2016</span></div><div class="case-b"><div><h4>What happened</h4><p>Niantic planned for 1× traffic, with 5× as the worst case. Real traffic hit 50× the plan, which was 10× the worst case.</p></div><div><h4>The fix</h4><p>Google&#x27;s reliability team added tens of thousands of CPU cores, upgraded the GKE cluster to add 1,000+ more nodes, and moved to a global HTTPS load balancer.</p></div></div><div class="case-s">Source: <a href="https://cloud.google.com/blog/products/containers-kubernetes/bringing-pokemon-go-to-life-on-google-cloud" target="_blank" rel="noopener">Google Cloud blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-scale:t">
       <div class="c-head"><h3>Vertical vs horizontal scaling</h3><label class="got"><input type="checkbox" id="k-l1-scale"><span>Got it</span></label></div>
       <ul>
         <li><b>Vertical:</b> buy a bigger machine. Simple. Has a ceiling. One failure takes all.</li>
@@ -388,7 +466,7 @@ flowchart LR
       </ul>
       <span class="key">Stateless app servers + shared state store.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-scale:f">
       <div class="box">
       <svg viewBox="0 0 560 230" role="img" aria-label="Left: all users go to one big server. Right: users go to a load balancer that spreads traffic across three small servers.">
         <line x1="280" y1="10" x2="280" y2="220" class="sm" style="stroke-dasharray:3 4"/>
@@ -414,20 +492,21 @@ flowchart LR
       </div>
       <figcaption>Same traffic, two shapes. Horizontal survives a dead machine.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-scale:c"><div class="case-h">Real case <b>Netflix</b><span class="yr">2008</span></div><div class="case-b"><div><h4>What happened</h4><p>A major database corruption in Netflix&#x27;s own data center stopped DVD shipping for three days. One big, vertically scaled database was a single point of failure.</p></div><div><h4>The fix</h4><p>Netflix moved to horizontally scaled, distributed systems in the AWS cloud. The move finished in 2016.</p></div></div><div class="case-s">Source: <a href="https://about.netflix.com/en/news/completing-the-netflix-cloud-migration" target="_blank" rel="noopener">Netflix newsroom</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-lb:t">
       <div class="c-head"><h3>Load balancer</h3><label class="got"><input type="checkbox" id="k-l1-lb"><span>Got it</span></label></div>
       <ul>
         <li>Spreads requests across servers.</li>
         <li><b>Algorithms:</b> round robin, least connections, hash by user or IP.</li>
         <li><b>Health checks</b> remove dead servers from the pool.</li>
-        <li><b>L4</b> routes by IP and port. <b>L7</b> reads HTTP and routes by path or header.</li>
+        <li><b><abbr class="ab" data-ab="L4 (load balancing)" title="OSI Layer 4: the transport layer">L4</abbr></b> routes by IP and port. <b><abbr class="ab" data-ab="L7 (load balancing)" title="OSI Layer 7: the application layer">L7</abbr></b> reads HTTP and routes by path or header.</li>
         <li>Run two balancers, or the balancer becomes the new single point of failure.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-lb:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   U["Users"] --> LB(["Load balancer"])
@@ -437,10 +516,11 @@ flowchart LR
       </pre></div>
       <figcaption>Round robin over the healthy servers. Server 3 gets nothing until it passes checks again.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-lb:c"><div class="case-h">Real case <b>AWS + Netflix</b><span class="yr">2012</span></div><div class="case-b"><div><h4>What happened</h4><p>On Christmas Eve, a maintenance process ran against production by mistake and deleted state data for AWS Elastic Load Balancing (ELB). Many load balancers broke, and Netflix streaming failed for many users.</p></div><div><h4>The fix</h4><p>AWS locked that data behind a change-approval step and improved its recovery process. Netflix started running in two regions (see Multi-region in L4).</p></div></div><div class="case-s">Source: <a href="https://aws.amazon.com/message/680587/" target="_blank" rel="noopener">AWS post-event summary</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-cache:t">
       <div class="c-head"><h3>Caching</h3><label class="got"><input type="checkbox" id="k-l1-cache"><span>Got it</span></label></div>
       <ul>
         <li>Keep hot data in RAM (Redis, Memcached). Skip the slow database.</li>
@@ -450,7 +530,7 @@ flowchart LR
       </ul>
       <span class="key">Hit rate is the number that matters.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-cache:f">
       <div class="box"><pre class="mermaid">
 flowchart TD
   R["Request"] --> Q{"In cache?"}
@@ -461,10 +541,11 @@ flowchart TD
       </pre></div>
       <figcaption>Cache-aside read path. A 90% hit rate removes 90% of database reads.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-cache:c"><div class="case-h">Real case <b>Twitter</b><span class="yr">2012</span></div><div class="case-b"><div><h4>What happened</h4><p>Building a home timeline on request meant reading recent tweets from everyone a user follows. At Twitter&#x27;s size this was far too slow.</p></div><div><h4>The fix</h4><p>When someone tweets, Twitter writes the tweet ID into each follower&#x27;s timeline list in a Redis cache. Reading a timeline becomes one fast cache read.</p></div></div><div class="case-s">Source: <a href="https://www.infoq.com/presentations/Twitter-Timeline-Scalability/" target="_blank" rel="noopener">Timelines at Scale talk (InfoQ)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-cdn:t">
       <div class="c-head"><h3>CDN</h3><label class="got"><input type="checkbox" id="k-l1-cdn"><span>Got it</span></label></div>
       <ul>
         <li>A CDN is a cache for files, placed in many cities.</li>
@@ -473,7 +554,7 @@ flowchart TD
         <li>Result: lower latency and much less load on your servers.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-cdn:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   U1["User in Tokyo"] -->|"20 ms"| E1["Edge Tokyo"]
@@ -483,10 +564,11 @@ flowchart LR
       </pre></div>
       <figcaption>Most requests stop at the edge. Dashed arrows are rare.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-cdn:c"><div class="case-h">Real case <b>Fastly</b><span class="yr">2021</span></div><div class="case-b"><div><h4>What happened</h4><p>A bug shipped on May 12 waited for one rare setting. On June 8, a customer pushed a valid config that triggered it. 85% of Fastly&#x27;s network returned errors, and big sites like Reddit and major news sites went down.</p></div><div><h4>The fix</h4><p>Fastly saw it within 1 minute and turned off that customer setting. 95% of the network was normal again within 49 minutes, and a permanent fix rolled out the same day.</p></div></div><div class="case-s">Source: <a href="https://www.fastly.com/blog/summary-of-june-8-outage" target="_blank" rel="noopener">Fastly blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-db:t">
       <div class="c-head"><h3>SQL vs NoSQL</h3><label class="got"><input type="checkbox" id="k-l1-db"><span>Got it</span></label></div>
       <ul>
         <li><b>SQL:</b> tables, joins, ACID transactions. Postgres, MySQL.</li>
@@ -495,7 +577,7 @@ flowchart LR
       </ul>
       <span class="key">Default: Postgres. Switch only for a clear reason.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-db:f">
       <div class="box"><pre class="mermaid">
 flowchart TD
   A{"Need joins and multi-row transactions?"} -->|"yes"| SQL["Relational: Postgres, MySQL"]
@@ -507,10 +589,11 @@ flowchart TD
       </pre></div>
       <figcaption>A rough decision tree. Real choices also weigh team skills and operations cost.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-db:c"><div class="case-h">Real case <b>Discord</b><span class="yr">2015–2022</span></div><div class="case-b"><div><h4>What happened</h4><p>Discord stored messages in MongoDB, then moved to Cassandra in 2017. By 2022, 177 Cassandra nodes suffered hot partitions, garbage-collection pauses and slow compaction.</p></div><div><h4>The fix</h4><p>Discord moved to ScyllaDB, which has no garbage collector, and added Rust data services that merge duplicate reads. 72 nodes now do the job, and p99 read latency fell from 40–125 ms to 15 ms.</p></div></div><div class="case-s">Source: <a href="https://discord.com/blog/how-discord-stores-trillions-of-messages" target="_blank" rel="noopener">Discord blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l1-api:t">
       <div class="c-head"><h3>APIs and real-time</h3><label class="got"><input type="checkbox" id="k-l1-api"><span>Got it</span></label></div>
       <div class="tbl"><table>
         <thead><tr><th>Style</th><th>Use it for</th></tr></thead>
@@ -522,7 +605,7 @@ flowchart TD
         </tbody>
       </table></div>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l1-api:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant C as Client
@@ -540,9 +623,10 @@ sequenceDiagram
       </pre></div>
       <figcaption>Polling asks again and again. A WebSocket keeps one connection open and the server pushes.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l1-api:c"><div class="case-h">Real case <b>Facebook (Meta)</b><span class="yr">2012</span></div><div class="case-b"><div><h4>What happened</h4><p>Facebook&#x27;s new native iOS app needed News Feed data. REST endpoints sent too much or too little data, so the app made many round trips.</p></div><div><h4>The fix</h4><p>Facebook created GraphQL. The app asks for exactly the fields it needs in one request. Facebook made it open source in 2015.</p></div></div><div class="case-s">Source: <a href="https://engineering.fb.com/2015/09/14/core-infra/graphql-a-data-query-language/" target="_blank" rel="noopener">Meta engineering blog</a></div></div>
   </article>
 
-  <div class="watch">
+  <div class="watch" data-anchor="watch-l1">
     <h3>Watch · L1</h3>
     <ul>
       <li><a href="https://www.youtube.com/watch?v=F2FmTdLtb_4" target="_blank" rel="noopener"><span class="who">freeCodeCamp</span><span class="what">System Design Concepts Course and Interview Prep<small>Full beginner course by Hayk Simonyan. Start here.</small></span><span class="kind">course</span></a></li>
@@ -555,14 +639,14 @@ sequenceDiagram
 
 <!-- ============ L2 ============ -->
 <section class="level" id="l2" style="--tc:var(--l2);--tt:var(--l2t)">
-  <div class="lv-head">
+  <div class="lv-head" data-anchor="lvh-l2">
     <span class="lv-tag">L2</span>
     <div><h2>Mid</h2><p class="lv-sub">Scale the data, not only the servers. <b>New problem:</b> the database is now the bottleneck.</p></div>
     <span class="lv-count" data-count="l2">0 / 10 done</span>
   </div>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-repl:t">
       <div class="c-head"><h3>Replication</h3><label class="got"><input type="checkbox" id="k-l2-repl"><span>Got it</span></label></div>
       <ul>
         <li>Keep copies of the same data on several machines.</li>
@@ -572,7 +656,7 @@ sequenceDiagram
       </ul>
       <span class="key">Scales reads. Does not scale writes.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-repl:f">
       <div class="box">
       <svg viewBox="0 0 560 240" role="img" aria-label="App sends writes to the leader and reads to followers. The leader copies data to two followers asynchronously, with lag.">
         <rect x="16" y="96" width="96" height="44" rx="8" class="b"/><text x="64" y="123" class="tb" text-anchor="middle">App</text>
@@ -588,10 +672,11 @@ sequenceDiagram
       </div>
       <figcaption>Writes take one path, reads another. A read right after a write can hit a follower that has not caught up.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-repl:c"><div class="case-h">Real case <b>GitHub</b><span class="yr">2018</span></div><div class="case-b"><div><h4>What happened</h4><p>A 43-second network split cut off GitHub&#x27;s main East Coast data center. The failover tool (Orchestrator) promoted West Coast databases, so each coast then held writes the other did not have.</p></div><div><h4>The fix</h4><p>GitHub ran degraded for 24 hours and 11 minutes while it restored data and replayed the missing writes. It then blocked automatic database failover across regions.</p></div></div><div class="case-s">Source: <a href="https://github.blog/news-insights/company-news/oct21-post-incident-analysis/" target="_blank" rel="noopener">GitHub blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-shard:t">
       <div class="c-head"><h3>Sharding</h3><label class="got"><input type="checkbox" id="k-l2-shard"><span>Got it</span></label></div>
       <ul>
         <li>Split data across machines. Each shard holds a slice.</li>
@@ -602,7 +687,7 @@ sequenceDiagram
       </ul>
       <span class="key">Scales writes. Costs joins.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-shard:f">
       <div class="box">
       <svg viewBox="0 0 560 236" role="img" aria-label="A user id is hashed, taken modulo 4, and routed to shard 1 of 4 shards.">
         <rect x="20" y="24" width="150" height="40" rx="8" class="b"/><text x="95" y="49" class="t" text-anchor="middle">user_id 4217</text>
@@ -618,10 +703,11 @@ sequenceDiagram
       </div>
       <figcaption>Simple hash routing. The weak spot is resizing: mod N moves most keys when N changes. The next concept fixes that.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-shard:c"><div class="case-h">Real case <b>Instagram (Meta)</b><span class="yr">2011</span></div><div class="case-b"><div><h4>What happened</h4><p>Instagram&#x27;s data outgrew a single PostgreSQL server.</p></div><div><h4>The fix</h4><p>Instagram split data into thousands of logical shards, mapped onto far fewer physical servers. Each ID packs 41 bits of time, 13 bits of shard ID and 10 bits of sequence, so IDs are unique and sort by time.</p></div></div><div class="case-s">Source: <a href="https://instagram-engineering.com/sharding-ids-at-instagram-1cf5a71e5a5c" target="_blank" rel="noopener">Instagram engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-ch:t">
       <div class="c-head"><h3>Consistent hashing</h3><label class="got"><input type="checkbox" id="k-l2-ch"><span>Got it</span></label></div>
       <ul>
         <li>Put nodes and keys on one ring.</li>
@@ -631,7 +717,7 @@ sequenceDiagram
         <li>Used in DynamoDB, Cassandra, CDNs, cache clusters.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-ch:f">
       <div class="box">
       <svg viewBox="0 0 560 290" role="img" aria-label="Two hash rings. Before: nodes A, B, C own keys k1, k2, k3. After adding node D, only key k1 moves, from B to D.">
         <text x="140" y="22" class="ta" text-anchor="middle">BEFORE · 3 nodes</text>
@@ -660,10 +746,11 @@ sequenceDiagram
       </div>
       <figcaption>Adding D moves only k1. With plain mod-N hashing, most keys would move.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-ch:c"><div class="case-h">Real case <b>Vimeo</b><span class="yr">2016</span></div><div class="case-b"><div><h4>What happened</h4><p>Vimeo sent video requests to cache servers with consistent hashing. Popular videos overloaded some servers while others sat idle.</p></div><div><h4>The fix</h4><p>Vimeo added &quot;consistent hashing with bounded loads&quot;, a 2016 Google research idea, to HAProxy. No server may take much more than the average load. Cache bandwidth fell to about one eighth.</p></div></div><div class="case-s">Source: <a href="https://research.google/blog/consistent-hashing-with-bounded-loads/" target="_blank" rel="noopener">Google Research blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-cap:t">
       <div class="c-head"><h3>CAP theorem</h3><label class="got"><input type="checkbox" id="k-l2-cap"><span>Got it</span></label></div>
       <ul>
         <li>Networks split. When they do, a node must choose.</li>
@@ -673,7 +760,7 @@ sequenceDiagram
       </ul>
       <span class="key">Banks lean CP. Like counters lean AP.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-cap:f">
       <div class="box">
       <svg viewBox="0 0 560 246" role="img" aria-label="A network split separates node 1, which has x equals 2, from node 2, which has old x equals 1. A read on node 2 must either fail (CP) or return stale data (AP).">
         <rect x="60" y="10" width="120" height="30" rx="6" class="b"/><text x="120" y="30" class="t" text-anchor="middle">Client A</text>
@@ -693,10 +780,11 @@ sequenceDiagram
       </div>
       <figcaption>CAP in one picture. During a split, Node 2 cannot see the new value, so it picks an error or an old answer.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-cap:c"><div class="case-h">Real case <b>Amazon</b><span class="yr">2007</span></div><div class="case-b"><div><h4>What happened</h4><p>Amazon&#x27;s shopping cart must accept &quot;Add to cart&quot; even during network splits and server failures. A rejected add is a lost sale.</p></div><div><h4>The fix</h4><p>Amazon built Dynamo, an AP key-value store. It always accepts writes and merges conflicting cart versions later. The trade-off: a deleted item can sometimes come back.</p></div></div><div class="case-s">Source: <a href="https://www.allthingsdistributed.com/2007/10/amazons_dynamo.html" target="_blank" rel="noopener">All Things Distributed (Werner Vogels)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-mq:t">
       <div class="c-head"><h3>Message queues</h3><label class="got"><input type="checkbox" id="k-l2-mq"><span>Got it</span></label></div>
       <ul>
         <li>Producers drop jobs in a queue. Workers pull them later.</li>
@@ -706,7 +794,7 @@ sequenceDiagram
         <li>Tools: SQS, RabbitMQ, Kafka.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-mq:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   P1["Web app"] -->|"publish job"| Q[("Queue")]
@@ -717,10 +805,11 @@ flowchart LR
       </pre></div>
       <figcaption>Upload a video: the API queues "make thumbnails" and answers at once. Workers do the slow part.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-mq:c"><div class="case-h">Real case <b>Slack</b><span class="yr">2016–2017</span></div><div class="case-b"><div><h4>What happened</h4><p>Slack&#x27;s job queue ran on Redis. A database slowdown made jobs pile up until Redis ran out of memory. Slack could no longer add or remove jobs, and the queue stayed stuck after the database recovered.</p></div><div><h4>The fix</h4><p>Slack put Kafka in front of Redis. Kafka keeps jobs safely on disk during a backlog, and a relay feeds them into Redis at a safe rate.</p></div></div><div class="case-s">Source: <a href="https://slack.engineering/scaling-slacks-job-queue/" target="_blank" rel="noopener">Slack engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-cw:t">
       <div class="c-head"><h3>Cache write strategies</h3><label class="got"><input type="checkbox" id="k-l2-cw"><span>Got it</span></label></div>
       <div class="tbl"><table>
         <thead><tr><th>Strategy</th><th>On write</th><th>Risk</th></tr></thead>
@@ -732,7 +821,7 @@ flowchart LR
       </table></div>
       <p><b>Stampede:</b> a hot key expires and thousands of requests hit the DB at once. Fix it with a lock, early refresh, or random TTLs.</p>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-cw:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant U as Many requests
@@ -746,10 +835,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>The cache stampede. One expiry turns into a database overload.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-cw:c"><div class="case-h">Real case <b>Facebook (Meta)</b><span class="yr">2013</span></div><div class="case-b"><div><h4>What happened</h4><p>When a popular cache key was deleted, many servers missed at once and hit the database together. Late writes also put stale values back into the cache.</p></div><div><h4>The fix</h4><p>Memcache &quot;leases&quot;: only one client gets a token to refill a missing key, and the others wait briefly. This cut peak database reads from about 17,000 to 1,300 per second.</p></div></div><div class="case-s">Source: <a href="https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170_update.pdf" target="_blank" rel="noopener">Scaling Memcache at Facebook (paper)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-rl:t">
       <div class="c-head"><h3>Rate limiting</h3><label class="got"><input type="checkbox" id="k-l2-rl"><span>Got it</span></label></div>
       <ul>
         <li>Caps requests per user, IP or API key.</li>
@@ -759,7 +849,7 @@ sequenceDiagram
         <li>Shared limits across servers need a shared counter, often Redis.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-rl:f">
       <div class="box">
       <svg viewBox="0 0 560 230" role="img" aria-label="Token bucket: refills 10 tokens per second, holds at most 20. Each request takes one token. With a token the request passes, with none it gets HTTP 429.">
         <line x1="280" y1="12" x2="280" y2="62" class="sa" marker-end="url(#a2)"/><text x="292" y="38" class="ta">refill 10 / s</text>
@@ -776,10 +866,11 @@ sequenceDiagram
       </div>
       <figcaption>Token bucket. A user can burst 20 requests, then gets 10 per second.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-rl:c"><div class="case-h">Real case <b>Stripe</b><span class="yr">2017</span></div><div class="case-b"><div><h4>What happened</h4><p>One user&#x27;s runaway script, or a burst of retries on slow endpoints, could overload Stripe&#x27;s payments API for everyone.</p></div><div><h4>The fix</h4><p>Stripe added four layers: a token bucket per user, a cap on requests in progress, and two load shedders that keep capacity for critical calls like charges. The limits run on Redis.</p></div></div><div class="case-s">Source: <a href="https://stripe.com/blog/rate-limiters" target="_blank" rel="noopener">Stripe blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-idx:t">
       <div class="c-head"><h3>Indexes</h3><label class="got"><input type="checkbox" id="k-l2-idx"><span>Got it</span></label></div>
       <ul>
         <li>No index: the DB scans every row. 10M rows = slow.</li>
@@ -789,7 +880,7 @@ sequenceDiagram
       </ul>
       <span class="key">Index the columns in your WHERE and ORDER BY.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-idx:f">
       <div class="box"><pre class="mermaid">
 flowchart TD
   Q["WHERE email = 'ana@example.com'"] --> R["Root page: a-m / n-z"]
@@ -799,10 +890,11 @@ flowchart TD
       </pre></div>
       <figcaption>A B-tree lookup walks a few pages from root to leaf instead of reading the whole table.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-idx:c"><div class="case-h">Real case <b>Uber</b><span class="yr">2016</span></div><div class="case-b"><div><h4>What happened</h4><p>In PostgreSQL, updating a row writes a new copy of the row, and the table&#x27;s indexes must point to it. Uber&#x27;s write-heavy tables caused heavy extra writes and replication traffic.</p></div><div><h4>The fix</h4><p>Uber moved to MySQL with InnoDB. Its secondary indexes point to the primary key, so an update only touches indexes on the columns that changed.</p></div></div><div class="case-s">Source: <a href="https://www.uber.com/us/en/blog/postgres-to-mysql-migration/" target="_blank" rel="noopener">Uber engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-ms:t">
       <div class="c-head"><h3>Monolith vs microservices</h3><label class="got"><input type="checkbox" id="k-l2-ms"><span>Got it</span></label></div>
       <ul>
         <li><b>Monolith:</b> one codebase, one deploy. Fast to start.</li>
@@ -812,7 +904,7 @@ flowchart TD
       </ul>
       <span class="key">Start with a monolith. Split when teams block each other.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-ms:f">
       <div class="box">
       <svg viewBox="0 0 560 252" role="img" aria-label="Left: a monolith holds users, orders and pay modules over one database. Right: an API gateway routes to three services, each with its own database.">
         <line x1="270" y1="8" x2="270" y2="244" class="sm" style="stroke-dasharray:3 4"/>
@@ -843,10 +935,11 @@ flowchart TD
       </div>
       <figcaption>Same features, two shapes. Microservices trade function calls for network calls.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-ms:c"><div class="case-h">Real case <b>Uber</b><span class="yr">2020</span></div><div class="case-b"><div><h4>What happened</h4><p>Uber grew to about 2,200 critical microservices. One feature could need changes in many services, and tracing a failure across them was slow.</p></div><div><h4>The fix</h4><p>Uber grouped services into domains, each behind one gateway, and sorted domains into layers. Teams now call a domain&#x27;s gateway instead of dozens of services. Uber calls this DOMA.</p></div></div><div class="case-s">Source: <a href="https://www.uber.com/us/en/blog/microservice-architecture/" target="_blank" rel="noopener">Uber engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l2-int:t">
       <div class="c-head"><h3>Interview framework</h3><label class="got"><input type="checkbox" id="k-l2-int"><span>Got it</span></label></div>
       <ul>
         <li>Ask before you draw. Who uses it? How many? Read-heavy or write-heavy?</li>
@@ -855,7 +948,7 @@ flowchart TD
         <li>Close with trade-offs and what you would do next.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l2-int:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   A["1 Clarify requirements"] --> B["2 Estimate scale"]
@@ -866,9 +959,10 @@ flowchart LR
       </pre></div>
       <figcaption>The usual flow in a design interview. Steps 3 and 4 repeat.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l2-int:c"><div class="case-h">Real case <b>HealthCare.gov (US government)</b><span class="yr">2013</span></div><div class="case-b"><div><h4>What happened</h4><p>The site launched with little load testing or end-to-end testing. It crashed on day one under more users than it could handle, and very few people could sign up.</p></div><div><h4>The fix</h4><p>A small &quot;tech surge&quot; team, including Google site reliability engineers, added monitoring and fixed the bottlenecks one by one. The site worked by December, and the team led to the US Digital Service.</p></div></div><div class="case-s">Source: <a href="https://en.wikipedia.org/wiki/HealthCare.gov" target="_blank" rel="noopener">Wikipedia</a></div></div>
   </article>
 
-  <div class="watch">
+  <div class="watch" data-anchor="watch-l2">
     <h3>Watch · L2</h3>
     <ul>
       <li><a href="https://www.youtube.com/watch?v=i7twT3x5yv8" target="_blank" rel="noopener"><span class="who">ByteByteGo</span><span class="what">System Design Interview: A Step-By-Step Guide<small>The framework above, in about 10 minutes.</small></span><span class="kind">video</span></a></li>
@@ -880,14 +974,14 @@ flowchart LR
 
 <!-- ============ L3 ============ -->
 <section class="level" id="l3" style="--tc:var(--l3);--tt:var(--l3t)">
-  <div class="lv-head">
+  <div class="lv-head" data-anchor="lvh-l3">
     <span class="lv-tag">L3</span>
     <div><h2>Advanced</h2><p class="lv-sub">Look inside the data systems. <b>New problem:</b> copies disagree, retries double-charge, writes get lost.</p></div>
     <span class="lv-count" data-count="l3">0 / 10 done</span>
   </div>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-lsm:t">
       <div class="c-head"><h3>Storage engines: B-tree vs LSM</h3><label class="got"><input type="checkbox" id="k-l3-lsm"><span>Got it</span></label></div>
       <ul>
         <li><b>B-tree:</b> updates pages in place. Fast reads. Postgres, MySQL.</li>
@@ -898,7 +992,7 @@ flowchart LR
       </ul>
       <span class="key">Write-heavy? LSM. Read-heavy? B-tree.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-lsm:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   W["Write"] --> WAL[("Write-ahead log on disk")]
@@ -911,10 +1005,11 @@ flowchart LR
       </pre></div>
       <figcaption>LSM write path. The log protects the RAM table if the node crashes.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-lsm:c"><div class="case-h">Real case <b>Facebook (Meta)</b><span class="yr">2016</span></div><div class="case-b"><div><h4>What happened</h4><p>Facebook&#x27;s main user database (UDB) ran MySQL on InnoDB, a B-tree engine. It used a lot of flash storage and wrote too much to the flash drives.</p></div><div><h4>The fix</h4><p>Facebook built MyRocks: MySQL on RocksDB, an LSM-tree engine. It used about half the storage of compressed InnoDB and wrote much less to flash.</p></div></div><div class="case-s">Source: <a href="https://engineering.fb.com/2016/08/31/core-infra/myrocks-a-space-and-write-optimized-mysql-database/" target="_blank" rel="noopener">Meta engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-cons:t">
       <div class="c-head"><h3>Consistency models</h3><label class="got"><input type="checkbox" id="k-l3-cons"><span>Got it</span></label></div>
       <ul>
         <li>A consistency model is a promise about what reads can return.</li>
@@ -923,7 +1018,7 @@ flowchart LR
         <li>Pick per feature. A bank balance and a like counter need different promises.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-cons:f">
       <div class="box">
       <svg viewBox="0 0 560 282" role="img" aria-label="Consistency models from strongest to weakest: linearizable, sequential, causal, read-your-writes, eventual, with example systems for each.">
         <line x1="26" y1="266" x2="26" y2="20" class="sa" marker-end="url(#a3)"/>
@@ -942,10 +1037,11 @@ flowchart LR
       </div>
       <figcaption>The ladder of promises. Each step down removes coordination and gains speed and uptime.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-cons:c"><div class="case-h">Real case <b>Amazon S3</b><span class="yr">2020</span></div><div class="case-b"><div><h4>What happened</h4><p>For 14 years, S3 was only eventually consistent for overwrites, deletes and listings. An app that read right after a write could see old data, so many teams built their own workarounds.</p></div><div><h4>The fix</h4><p>In December 2020, S3 became strongly consistent (read-after-write) for every operation, at no extra cost and with no code changes.</p></div></div><div class="case-s">Source: <a href="https://aws.amazon.com/blogs/aws/amazon-s3-update-strong-read-after-write-consistency/" target="_blank" rel="noopener">AWS News Blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-quorum:t">
       <div class="c-head"><h3>Quorums</h3><label class="got"><input type="checkbox" id="k-l3-quorum"><span>Got it</span></label></div>
       <ul>
         <li>N copies. A write waits for W acks. A read asks R copies.</li>
@@ -955,7 +1051,7 @@ flowchart LR
         <li>Used in Dynamo-style stores: Cassandra, Riak, DynamoDB internals.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-quorum:f">
       <div class="box">
       <svg viewBox="0 0 560 232" role="img" aria-label="Three replicas. The writer stores v2 on replicas 1 and 2. The reader asks replicas 2 and 3, gets v2 and v1, and keeps v2. Replica 2 is the overlap.">
         <rect x="40" y="10" width="130" height="34" rx="8" class="b"/><text x="105" y="32" class="tb" text-anchor="middle">Writer: v2</text>
@@ -976,10 +1072,11 @@ flowchart LR
       </div>
       <figcaption>The overlap guarantees the reader sees at least one copy of the latest write.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-quorum:c"><div class="case-h">Real case <b>Amazon Aurora</b><span class="yr">2017</span></div><div class="case-b"><div><h4>What happened</h4><p>With 3 copies and a 2-of-3 quorum, losing one AZ plus one more disk breaks the quorum. In a huge fleet, that second failure is not rare.</p></div><div><h4>The fix</h4><p>Aurora keeps 6 copies across 3 AZs. Writes need 4 and reads need 3. It keeps writing after losing a whole AZ, and loses no data after losing an AZ plus one more copy.</p></div></div><div class="case-s">Source: <a href="https://aws.amazon.com/blogs/database/amazon-aurora-under-the-hood-quorum-and-correlated-failure/" target="_blank" rel="noopener">AWS Database blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-iso:t">
       <div class="c-head"><h3>Isolation levels</h3><label class="got"><input type="checkbox" id="k-l3-iso"><span>Got it</span></label></div>
       <div class="tbl"><table>
         <thead><tr><th>Level</th><th>Stops</th><th>Still allows</th></tr></thead>
@@ -991,7 +1088,7 @@ flowchart LR
       </table></div>
       <p>Many databases default to read committed. Check yours. Fix lost updates with atomic updates (<code>SET n = n + 1</code>), <code>SELECT … FOR UPDATE</code>, or serializable mode.</p>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-iso:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant T1 as Txn 1
@@ -1005,10 +1102,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>The lost update. Both transactions read the same old value, and the second write hides the first.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-iso:c"><div class="case-h">Real case <b>Flexcoin + Poloniex (bitcoin exchanges)</b><span class="yr">2014</span></div><div class="case-b"><div><h4>What happened</h4><p>Attackers sent thousands of withdrawal requests at once. Each passed the balance check before any debit was saved, so balances went negative. Flexcoin lost about 896 bitcoin and shut down. Poloniex lost about 12% of its bitcoin.</p></div><div><h4>The fix</h4><p>The safe pattern: check and debit in one transaction with a row lock (SELECT … FOR UPDATE) or serializable isolation. A 2017 study, ACIDRain, found 22 bugs like this in popular online-shop software.</p></div></div><div class="case-s">Source: <a href="https://www.computerworld.com/article/1383775/withdrawal-vulnerabilities-enabled-bitcoin-theft-from-flexcoin-and-poloniex.html" target="_blank" rel="noopener">Computerworld</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-2pc:t">
       <div class="c-head"><h3>Two-phase commit (2PC)</h3><label class="got"><input type="checkbox" id="k-l3-2pc"><span>Got it</span></label></div>
       <ul>
         <li>One transaction across two databases. All commit or none.</li>
@@ -1018,7 +1116,7 @@ sequenceDiagram
       </ul>
       <span class="key">Correct, but slow and blocking.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-2pc:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant C as Coordinator
@@ -1034,10 +1132,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>Both nodes promise first, then commit. The promise is what makes it atomic.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-2pc:c"><div class="case-h">Real case <b>Google</b><span class="yr">2010</span></div><div class="case-b"><div><h4>What happened</h4><p>Google rebuilt its search index with huge batch MapReduce jobs. A new page waited for the next full run, so the index was often days old.</p></div><div><h4>The fix</h4><p>Google built Percolator: small transactions on Bigtable, made atomic with two-phase commit, that update the index one page at a time. The average age of documents in search results fell by 50%.</p></div></div><div class="case-s">Source: <a href="https://research.google/pubs/large-scale-incremental-processing-using-distributed-transactions-and-notifications/" target="_blank" rel="noopener">Google Research (Percolator paper)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-saga:t">
       <div class="c-head"><h3>Sagas</h3><label class="got"><input type="checkbox" id="k-l3-saga"><span>Got it</span></label></div>
       <ul>
         <li>Split a long process into local steps. Each step commits alone.</li>
@@ -1047,7 +1146,7 @@ sequenceDiagram
       </ul>
       <span class="key">Microservices use sagas, not 2PC.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-saga:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   A["1 Reserve stock"] --> B["2 Charge card"]
@@ -1059,10 +1158,11 @@ flowchart LR
       </pre></div>
       <figcaption>An order saga. Dashed paths are compensations that undo earlier steps.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-saga:c"><div class="case-h">Real case <b>Uber</b><span class="yr">2017–2023</span></div><div class="case-b"><div><h4>What happened</h4><p>Uber&#x27;s business flows, like trips and payments, span many services. Hand-written retries and queues for each step were fragile and hard to debug.</p></div><div><h4>The fix</h4><p>Uber built Cadence, a workflow engine. It saves each step&#x27;s progress, retries failed steps, and lets code run undo steps when a later step fails. Over 1,000 Uber services use it.</p></div></div><div class="case-s">Source: <a href="https://www.uber.com/us/en/blog/announcing-cadence/" target="_blank" rel="noopener">Uber engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-log:t">
       <div class="c-head"><h3>Event logs (Kafka)</h3><label class="got"><input type="checkbox" id="k-l3-log"><span>Got it</span></label></div>
       <ul>
         <li>A topic is an append-only log, split into <b>partitions</b>.</li>
@@ -1072,7 +1172,7 @@ flowchart LR
       </ul>
       <span class="key">Queue: a job is done once. Log: events are kept and replayed.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-log:f">
       <div class="box">
       <svg viewBox="0 0 560 250" role="img" aria-label="A topic with three partitions of numbered events. Consumer group A and group B read the same partitions at different offsets.">
         <text x="20" y="20" class="ta">topic: orders</text>
@@ -1102,10 +1202,11 @@ flowchart LR
       </div>
       <figcaption>Two consumer groups read the same partitions. Each marker is that group's offset. Neither group slows the other.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-log:c"><div class="case-h">Real case <b>LinkedIn</b><span class="yr">2010–2011</span></div><div class="case-b"><div><h4>What happened</h4><p>LinkedIn had many custom pipelines moving data between databases, search, analytics and monitoring. Every new system needed new links to all the others.</p></div><div><h4>The fix</h4><p>LinkedIn built Kafka: one central, replayable log of events that every system writes to and reads from. It became open source in 2011.</p></div></div><div class="case-s">Source: <a href="https://en.wikipedia.org/wiki/Apache_Kafka" target="_blank" rel="noopener">Wikipedia: Apache Kafka</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-idem:t">
       <div class="c-head"><h3>Idempotency</h3><label class="got"><input type="checkbox" id="k-l3-idem"><span>Got it</span></label></div>
       <ul>
         <li>Networks drop replies. Clients retry. Retries can repeat side effects.</li>
@@ -1115,7 +1216,7 @@ flowchart LR
       </ul>
       <span class="key">Every payment API needs this.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-idem:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant C as Client
@@ -1131,10 +1232,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>The retry carries the same key, so the server returns the saved result instead of charging again.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-idem:c"><div class="case-h">Real case <b>Stripe</b><span class="yr">2017</span></div><div class="case-b"><div><h4>What happened</h4><p>A payment request can time out after the charge already went through. If the client simply retries, the customer pays twice.</p></div><div><h4>The fix</h4><p>Stripe&#x27;s API takes an Idempotency-Key header. The server saves the first result for that key and returns it for every retry, so the charge happens once.</p></div></div><div class="case-s">Source: <a href="https://stripe.com/blog/idempotency" target="_blank" rel="noopener">Stripe blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-outbox:t">
       <div class="c-head"><h3>Outbox pattern and CDC</h3><label class="got"><input type="checkbox" id="k-l3-outbox"><span>Got it</span></label></div>
       <ul>
         <li><b>Dual-write bug:</b> save to DB, then publish to Kafka. If step 2 fails, systems drift.</li>
@@ -1143,7 +1245,7 @@ sequenceDiagram
         <li><b>CDC</b> (change data capture) reads the DB's own log. Tool: Debezium.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-outbox:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   S["Order service"] -->|"one transaction"| DB[("orders + outbox tables")]
@@ -1154,10 +1256,11 @@ flowchart LR
       </pre></div>
       <figcaption>The event cannot get lost, because it is saved in the same commit as the data.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-outbox:c"><div class="case-h">Real case <b>Netflix</b><span class="yr">2019–2020</span></div><div class="case-b"><div><h4>What happened</h4><p>Netflix services wrote to a database and to other stores, like search indexes, in separate steps. When one write failed, the copies drifted apart.</p></div><div><h4>The fix</h4><p>Netflix built DBLog, a CDC tool. It reads the database&#x27;s own change log and streams every change out, so other systems update from one source of truth.</p></div></div><div class="case-s">Source: <a href="https://arxiv.org/abs/2010.12597" target="_blank" rel="noopener">DBLog paper (arXiv)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l3-obs:t">
       <div class="c-head"><h3>Observability and SLOs</h3><label class="got"><input type="checkbox" id="k-l3-obs"><span>Got it</span></label></div>
       <ul>
         <li><b>Metrics</b> tell you something is wrong. <b>Traces</b> show where. <b>Logs</b> show why.</li>
@@ -1174,7 +1277,7 @@ flowchart LR
         </tbody>
       </table></div>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l3-obs:f">
       <div class="box">
       <svg viewBox="0 0 560 206" role="img" aria-label="Trace waterfall for GET /feed taking 180 milliseconds. The database query takes 115 milliseconds, most of the total.">
         <text x="140" y="34" class="tb" text-anchor="end">GET /feed</text><rect x="150" y="20" width="378" height="20" rx="3" class="bs"/><text x="520" y="35" class="tm" text-anchor="end">180 ms</text>
@@ -1189,9 +1292,10 @@ flowchart LR
       </div>
       <figcaption>A trace splits one request into timed spans. Here the database query is most of the 180 ms.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l3-obs:c"><div class="case-h">Real case <b>Google</b><span class="yr">2016</span></div><div class="case-b"><div><h4>What happened</h4><p>Developers wanted to ship fast. Operations teams wanted stability. Every launch turned into an argument.</p></div><div><h4>The fix</h4><p>Google&#x27;s SRE teams set an SLO for each service. The gap between 100% and the SLO is the error budget. While budget remains, teams ship. When it runs out, launches pause.</p></div></div><div class="case-s">Source: <a href="https://sre.google/sre-book/embracing-risk/" target="_blank" rel="noopener">Google SRE book</a></div></div>
   </article>
 
-  <div class="watch">
+  <div class="watch" data-anchor="watch-l3">
     <h3>Watch · L3</h3>
     <ul>
       <li><a href="https://www.youtube.com/playlist?list=PLjTveVh7FakLdTmm42TMxbN8PvVn5g4KJ" target="_blank" rel="noopener"><span class="who">Jordan has no life</span><span class="what">Systems Design 2.0<small>Deep concept series: storage engines, replication, partitioning, streams.</small></span><span class="kind">playlist</span></a></li>
@@ -1205,14 +1309,14 @@ flowchart LR
 
 <!-- ============ L4 ============ -->
 <section class="level" id="l4" style="--tc:var(--l4);--tt:var(--l4t)">
-  <div class="lv-head">
+  <div class="lv-head" data-anchor="lvh-l4">
     <span class="lv-tag">L4</span>
     <div><h2>Expert</h2><p class="lv-sub">Distributed systems theory. <b>New problem:</b> clocks drift, messages vanish, and nodes stop in the middle of a step.</p></div>
     <span class="lv-count" data-count="l4">0 / 9 done</span>
   </div>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-fail:t">
       <div class="c-head"><h3>Partial failure</h3><label class="got"><input type="checkbox" id="k-l4-fail"><span>Got it</span></label></div>
       <ul>
         <li>One machine either works or crashes. A cluster can be half broken.</li>
@@ -1222,7 +1326,7 @@ flowchart LR
       </ul>
       <span class="key">Design every call for "no answer".</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-fail:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   A["Request sent, no reply"] --> B{"What happened?"}
@@ -1237,10 +1341,11 @@ flowchart LR
       </pre></div>
       <figcaption>Four different faults, one symptom. In case 4 the work was done, so a retry may repeat it.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-fail:c"><div class="case-h">Real case <b>Slack</b><span class="yr">2021</span></div><div class="case-b"><div><h4>What happened</h4><p>On January 4, an AWS Transit Gateway could not scale fast enough for post-holiday traffic and dropped packets. Healthy web servers looked dead because their calls were slow. Automation removed them and tried to add about 1,200 servers, which overloaded the provisioning service.</p></div><div><h4>The fix</h4><p>AWS raised gateway capacity by hand. Slack moved its dashboards off that gateway, load-tests provisioning regularly, and reviewed its health checks and autoscaling.</p></div></div><div class="case-s">Source: <a href="https://slack.engineering/slacks-outage-on-january-4th-2021/" target="_blank" rel="noopener">Slack engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-clock:t">
       <div class="c-head"><h3>Logical clocks</h3><label class="got"><input type="checkbox" id="k-l4-clock"><span>Got it</span></label></div>
       <ul>
         <li>Wall clocks drift. NTP can jump them backward. "Last write wins" by timestamp can drop writes.</li>
@@ -1249,7 +1354,7 @@ flowchart LR
         <li><b>Vector clocks</b> keep one counter per node. They detect concurrent events.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-clock:f">
       <div class="box">
       <svg viewBox="0 0 560 236" role="img" aria-label="Three process timelines with Lamport counters. P1 sends m1 to P2, P2 sends m2 to P3. Event e3 on P1 has counter 3 and event g2 on P3 has counter 5, but they are concurrent.">
         <text x="20" y="55" class="tb">P1</text><text x="20" y="125" class="tb">P2</text><text x="20" y="195" class="tb">P3</text>
@@ -1271,10 +1376,11 @@ flowchart LR
       </div>
       <figcaption>Lamport counters respect cause and effect. But 3 &lt; 5 does not mean e3 came first. Vector clocks fix that.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-clock:c"><div class="case-h">Real case <b>Cloudflare</b><span class="yr">2017</span></div><div class="case-b"><div><h4>What happened</h4><p>On January 1, a leap second made the clock step back. Cloudflare&#x27;s DNS code, written in Go, measured a round trip as a negative time. A random-number call then failed on the negative value, and some DNS lookups failed.</p></div><div><h4>The fix</h4><p>Cloudflare discarded negative measurements and patched the worst machines within 90 minutes. The lesson: measure time spans with a monotonic clock, never with wall-clock time.</p></div></div><div class="case-s">Source: <a href="https://blog.cloudflare.com/how-and-why-the-leap-second-affected-cloudflare-dns/" target="_blank" rel="noopener">Cloudflare blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-lin:t">
       <div class="c-head"><h3>Linearizability</h3><label class="got"><input type="checkbox" id="k-l4-lin"><span>Got it</span></label></div>
       <ul>
         <li>The system acts like one copy. Once a write finishes, every later read sees it.</li>
@@ -1283,7 +1389,7 @@ flowchart LR
         <li>Both together = "strict serializable". Spanner gives this.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-lin:f">
       <div class="box">
       <svg viewBox="0 0 560 196" role="img" aria-label="Timeline: client A writes x equals 1. Client C reads during the write and may see 0 or 1. Client B reads after the write finished and sees 0, which breaks linearizability.">
         <line x1="40" y1="178" x2="540" y2="178" class="sm" marker-end="url(#am)"/><text x="536" y="194" class="tm" text-anchor="end">time</text>
@@ -1296,10 +1402,11 @@ flowchart LR
       </div>
       <figcaption>The test: any read that starts after a write ends must see that write. B fails it.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-lin:c"><div class="case-h">Real case <b>MongoDB</b><span class="yr">2015–2017</span></div><div class="case-b"><div><h4>What happened</h4><p>Jepsen tests in 2015 showed MongoDB could return stale and even uncommitted data, even with majority writes. A read right after a write could miss it.</p></div><div><h4>The fix</h4><p>MongoDB 3.4 added a new replication protocol and a &quot;linearizable&quot; read concern. Jepsen&#x27;s 2017 tests found it passed linearizability checks.</p></div></div><div class="case-s">Source: <a href="https://jepsen.io/analyses/mongodb-3-4-0-rc3" target="_blank" rel="noopener">Jepsen analysis</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-raft1:t">
       <div class="c-head"><h3>Consensus: Raft leader election</h3><label class="got"><input type="checkbox" id="k-l4-raft1"><span>Got it</span></label></div>
       <ul>
         <li>Consensus = nodes agree on one value, even when some crash.</li>
@@ -1309,7 +1416,7 @@ flowchart LR
         <li>Built on it: etcd, Consul, CockroachDB, Kafka KRaft.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-raft1:f">
       <div class="box"><pre class="mermaid">
 stateDiagram-v2
   [*] --> Follower
@@ -1321,10 +1428,11 @@ stateDiagram-v2
       </pre></div>
       <figcaption>Every Raft node is in one of three states. Random timeouts make split votes rare.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-raft1:c"><div class="case-h">Real case <b>Roblox</b><span class="yr">2021</span></div><div class="case-b"><div><h4>What happened</h4><p>Roblox ran its core services on HashiCorp Consul, which uses Raft. Under heavy load, a new streaming feature and a slowly growing storage file (BoltDB) made Consul leaders very slow. Roblox was down for 73 hours.</p></div><div><h4>The fix</h4><p>Roblox turned off streaming, compacted the database, split critical services into separate Consul clusters, and built a second data center.</p></div></div><div class="case-s">Source: <a href="https://about.roblox.com/newsroom/2022/01/roblox-return-to-service-10-28-10-31-2021" target="_blank" rel="noopener">Roblox newsroom</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-raft2:t">
       <div class="c-head"><h3>Consensus: Raft log replication</h3><label class="got"><input type="checkbox" id="k-l4-raft2"><span>Got it</span></label></div>
       <ul>
         <li>The leader appends each command to its log and sends it to followers.</li>
@@ -1333,7 +1441,7 @@ stateDiagram-v2
         <li>Same log + same order = same state machine. This is <b>state machine replication</b>.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-raft2:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant C as Client
@@ -1351,10 +1459,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>The leader answers after a majority stores the entry. It does not wait for the slow follower.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-raft2:c"><div class="case-h">Real case <b>Apache Kafka</b><span class="yr">2019–2025</span></div><div class="case-b"><div><h4>What happened</h4><p>Kafka kept its cluster metadata in a separate ZooKeeper cluster. That limited how many partitions a cluster could hold and made controller failover slow.</p></div><div><h4>The fix</h4><p>KIP-500 moved the metadata into Kafka itself, as a Raft-replicated log called KRaft. Kafka 4.0 (2025) removed ZooKeeper completely.</p></div></div><div class="case-s">Source: <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-500%3A+Replace+ZooKeeper+with+a+Self-Managed+Metadata+Quorum" target="_blank" rel="noopener">KIP-500 (Apache wiki)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-fence:t">
       <div class="c-head"><h3>Split brain and fencing tokens</h3><label class="got"><input type="checkbox" id="k-l4-fence"><span>Got it</span></label></div>
       <ul>
         <li>A lock holder can pause (GC, VM freeze) and wake up after its lease expired.</li>
@@ -1364,7 +1473,7 @@ sequenceDiagram
       </ul>
       <span class="key">Leases alone are not safe. Fence the writes.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-fence:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant A as Client A
@@ -1384,10 +1493,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>Client A wakes up and tries to write. The token stops it.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-fence:c"><div class="case-h">Real case <b>Google</b><span class="yr">2006</span></div><div class="case-b"><div><h4>What happened</h4><p>In Google&#x27;s Chubby lock service, a client could be paused or delayed, lose its lock, and still send old requests as if it held the lock.</p></div><div><h4>The fix</h4><p>Chubby hands out &quot;sequencers&quot;: tokens that carry the lock&#x27;s generation number. Servers check the token and reject stale ones. This is the same idea as a fencing token.</p></div></div><div class="case-s">Source: <a href="https://research.google/pubs/the-chubby-lock-service-for-loosely-coupled-distributed-systems/" target="_blank" rel="noopener">Google Research (Chubby paper)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-tt:t">
       <div class="c-head"><h3>TrueTime and Spanner</h3><label class="got"><input type="checkbox" id="k-l4-tt"><span>Got it</span></label></div>
       <ul>
         <li>Google Spanner is a global SQL database with strict serializability.</li>
@@ -1397,7 +1507,7 @@ sequenceDiagram
       </ul>
       <span class="key">Spend a few ms of waiting to buy global order.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-tt:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant T as Transaction
@@ -1410,10 +1520,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>Commit wait. Smaller clock uncertainty means a shorter wait.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-tt:c"><div class="case-h">Real case <b>Google</b><span class="yr">2012</span></div><div class="case-b"><div><h4>What happened</h4><p>Google&#x27;s ads business (AdWords) ran on MySQL split into shards by hand. Resharding was risky and slow, and transactions across shards were hard.</p></div><div><h4>The fix</h4><p>Google built F1, a SQL database on top of Spanner. Spanner uses TrueTime for globally ordered transactions and moves data between servers automatically.</p></div></div><div class="case-s">Source: <a href="https://research.google/pubs/f1-a-distributed-sql-database-that-scales/" target="_blank" rel="noopener">Google Research (F1 paper)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-region:t">
       <div class="c-head"><h3>Multi-region</h3><label class="got"><input type="checkbox" id="k-l4-region"><span>Got it</span></label></div>
       <ul>
         <li><b>Active–passive:</b> one region writes, one waits. Simple. Failover can lose the last seconds.</li>
@@ -1422,7 +1533,7 @@ sequenceDiagram
         <li>A sync write across an ocean adds about 100 ms or more.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-region:f">
       <div class="box">
       <svg viewBox="0 0 560 244" role="img" aria-label="Left: active-passive, region A takes writes and copies to standby region B. Right: active-active, both regions take writes and sync both ways.">
         <line x1="280" y1="8" x2="280" y2="236" class="sm" style="stroke-dasharray:3 4"/>
@@ -1442,10 +1553,11 @@ sequenceDiagram
       </div>
       <figcaption>The extra arrow on the right is the whole trade: local writes everywhere, in exchange for conflicts.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-region:c"><div class="case-h">Real case <b>Netflix</b><span class="yr">2013</span></div><div class="case-b"><div><h4>What happened</h4><p>The Christmas Eve 2012 load balancer outage hit only one AWS region, yet Netflix went down. One region was a single point of failure.</p></div><div><h4>The fix</h4><p>Netflix ran its service active–active in two AWS regions, with Cassandra copying data between them. If one region fails, traffic moves to the other.</p></div></div><div class="case-s">Source: <a href="https://netflixtechblog.com/active-active-for-multi-regional-resiliency-c47719f6685b" target="_blank" rel="noopener">Netflix tech blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l4-tail:t">
       <div class="c-head"><h3>Tail latency at scale</h3><label class="got"><input type="checkbox" id="k-l4-tail"><span>Got it</span></label></div>
       <ul>
         <li>One user request may fan out to 100 servers. It is as slow as the slowest one.</li>
@@ -1455,7 +1567,7 @@ sequenceDiagram
       </ul>
       <span class="key">At scale, p99 becomes the median.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l4-tail:f">
       <div class="box">
       <svg viewBox="0 0 560 216" role="img" aria-label="One request fans out to 100 servers. Each is slow 1 percent of the time, so about 63 percent of requests wait on at least one slow server.">
         <rect x="200" y="8" width="160" height="34" rx="8" class="b"/><text x="280" y="30" class="tb" text-anchor="middle">1 user request</text>
@@ -1471,9 +1583,10 @@ sequenceDiagram
       </div>
       <figcaption>Fan-out turns rare slowness into common slowness. This is why big systems care about p99 and p99.9.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l4-tail:c"><div class="case-h">Real case <b>Google</b><span class="yr">2013</span></div><div class="case-b"><div><h4>What happened</h4><p>In a test that read 1,000 keys spread over 100 Bigtable servers, the slowest replies set the total time. The 99.9th percentile was 1,800 ms.</p></div><div><h4>The fix</h4><p>Hedged requests: if a reply takes more than 10 ms, send a copy to another server and use whichever answers first. The 99.9th percentile fell to 74 ms with only about 2% more requests.</p></div></div><div class="case-s">Source: <a href="https://research.google/pubs/the-tail-at-scale/" target="_blank" rel="noopener">Google Research (The Tail at Scale)</a></div></div>
   </article>
 
-  <div class="watch">
+  <div class="watch" data-anchor="watch-l4">
     <h3>Watch · L4</h3>
     <ul>
       <li><a href="https://www.youtube.com/playlist?list=PLeKd45zvjcDFUEv_ohr_HdUFe97RItdiB" target="_blank" rel="noopener"><span class="who">Martin Kleppmann</span><span class="what">Distributed Systems lecture series (Cambridge)<small>The best free course on this level. Clocks, broadcast, replication, consensus, Spanner.</small></span><span class="kind">playlist</span></a></li>
@@ -1490,14 +1603,14 @@ sequenceDiagram
 
 <!-- ============ L5 ============ -->
 <section class="level" id="l5" style="--tc:var(--l5);--tt:var(--l5t)">
-  <div class="lv-head">
+  <div class="lv-head" data-anchor="lvh-l5">
     <span class="lv-tag">L5</span>
     <div><h2>Hardcore</h2><p class="lv-sub">Prove it, break it, read the papers. <b>New problem:</b> bugs hide in event orders you will never see in normal testing.</p></div>
     <span class="lv-count" data-count="l5">0 / 10 done</span>
   </div>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-flp:t">
       <div class="c-head"><h3>FLP impossibility</h3><label class="got"><input type="checkbox" id="k-l5-flp"><span>Got it</span></label></div>
       <ul>
         <li>In a fully asynchronous network, no deterministic algorithm can always reach consensus if even one node may crash.</li>
@@ -1506,7 +1619,7 @@ sequenceDiagram
       </ul>
       <span class="key">Safety always. Liveness when lucky.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-flp:f">
       <div class="box"><pre class="mermaid">
 flowchart TD
   A["Fully async network"] --> C["FLP, 1985: no algorithm always decides"]
@@ -1518,10 +1631,11 @@ flowchart TD
       </pre></div>
       <figcaption>The result that shapes every consensus protocol. They trade guaranteed progress for guaranteed correctness.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-flp:c"><div class="case-h">Real case <b>Elastic (Elasticsearch)</b><span class="yr">2019</span></div><div class="case-b"><div><h4>What happened</h4><p>Older Elasticsearch needed a hand-set &quot;minimum master nodes&quot; number. A wrong value let a network split elect two masters (split brain), and data could be lost.</p></div><div><h4>The fix</h4><p>Elasticsearch 7.0 replaced it with a new coordination system that works out quorums by itself and was checked with TLA+. With no majority, the cluster waits instead of electing two leaders.</p></div></div><div class="case-s">Source: <a href="https://www.elastic.co/blog/a-new-era-for-cluster-coordination-in-elasticsearch" target="_blank" rel="noopener">Elastic blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-paxos:t">
       <div class="c-head"><h3>Paxos</h3><label class="got"><input type="checkbox" id="k-l5-paxos"><span>Got it</span></label></div>
       <ul>
         <li>The original consensus protocol (Lamport). Raft is a cleaner relative.</li>
@@ -1531,7 +1645,7 @@ flowchart TD
         <li>Family: Multi-Paxos, Viewstamped Replication, EPaxos, Flexible Paxos.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-paxos:f">
       <div class="box"><pre class="mermaid">
 sequenceDiagram
   participant P as Proposer
@@ -1550,10 +1664,11 @@ sequenceDiagram
       </pre></div>
       <figcaption>Two of three acceptors shown. The reuse rule is why two proposers can never choose different values.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-paxos:c"><div class="case-h">Real case <b>Google</b><span class="yr">2007</span></div><div class="case-b"><div><h4>What happened</h4><p>Google rebuilt the database under its Chubby lock service on Paxos. The algorithm fit on one page, but the real system had to handle disk corruption, leader changes and changes to the set of servers.</p></div><div><h4>The fix</h4><p>The team added master leases, snapshots, checksums and heavy random fault-injection tests. Their paper, &quot;Paxos Made Live&quot;, explains the gap between theory and production.</p></div></div><div class="case-s">Source: <a href="https://research.google/pubs/paxos-made-live-an-engineering-perspective-2006-invited-talk/" target="_blank" rel="noopener">Google Research (Paxos Made Live)</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-bft:t">
       <div class="c-head"><h3>Byzantine faults</h3><label class="got"><input type="checkbox" id="k-l5-bft"><span>Got it</span></label></div>
       <ul>
         <li>Crash faults stop. <b>Byzantine</b> faults lie: they send different values to different nodes.</li>
@@ -1562,7 +1677,7 @@ sequenceDiagram
         <li>Inside one company's data center, most systems assume crash faults only.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-bft:f">
       <div class="box">
       <svg viewBox="0 0 560 236" role="img" aria-label="Four nodes. Node 1 is a liar and sends value A to nodes 2 and 4 and value B to node 3. The three honest nodes compare and the majority value A wins.">
         <line x1="148" y1="50" x2="410" y2="50" class="sa" marker-end="url(#a5)"/><text x="280" y="42" class="ta" text-anchor="middle">says A</text>
@@ -1581,10 +1696,11 @@ sequenceDiagram
       </div>
       <figcaption>With only 3 nodes, the honest pair could not tell who lied. The fourth node breaks the tie.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-bft:c"><div class="case-h">Real case <b>Cloudflare</b><span class="yr">2020</span></div><div class="case-b"><div><h4>What happened</h4><p>A network switch failed only partly. Two etcd nodes saw the network differently, so leader elections tied again and again, and the cluster could not accept writes. Knock-on database failovers hurt Cloudflare&#x27;s API and dashboard for over 6 hours.</p></div><div><h4>The fix</h4><p>Cloudflare fixed a bug that forced replica rebuilds after a failover and made automatic database promotion less eager. Cloudflare called it a Byzantine failure. Experts later said an &quot;omission fault&quot; describes it better.</p></div></div><div class="case-s">Source: <a href="https://blog.cloudflare.com/a-byzantine-failure-in-the-real-world/" target="_blank" rel="noopener">Cloudflare blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-crdt:t">
       <div class="c-head"><h3>CRDTs</h3><label class="got"><input type="checkbox" id="k-l5-crdt"><span>Got it</span></label></div>
       <ul>
         <li>Data types that merge without coordination. No locks, no leader.</li>
@@ -1594,7 +1710,7 @@ sequenceDiagram
       </ul>
       <span class="key">Strong eventual consistency: same updates seen = same state.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-crdt:f">
       <div class="box">
       <svg viewBox="0 0 560 230" role="img" aria-label="Replica A holds counts A 3, B 0. Replica B holds A 1, B 2. Merging takes the max per slot: A 3, B 2, total 5.">
         <rect x="30" y="20" width="200" height="74" rx="10" class="b"/><text x="130" y="42" class="tb" text-anchor="middle">Replica A</text><text x="130" y="64" class="t" text-anchor="middle" style="font-family:var(--mono)">A:3  B:0</text><text x="130" y="83" class="tm" text-anchor="middle">value 3</text>
@@ -1607,10 +1723,11 @@ sequenceDiagram
       </div>
       <figcaption>Both replicas show 3, but the true count is 5. Taking the larger total would lose 2 increments. Max per slot loses none.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-crdt:c"><div class="case-h">Real case <b>Figma</b><span class="yr">2019</span></div><div class="case-b"><div><h4>What happened</h4><p>Figma needed many people to edit one design file at the same time, with every change showing up instantly for everyone.</p></div><div><h4>The fix</h4><p>Figma borrowed CRDT ideas, like last-writer-wins for each property, but kept a central server as the final authority. That was simpler than a fully decentralized CRDT.</p></div></div><div class="case-s">Source: <a href="https://www.figma.com/blog/how-figmas-multiplayer-technology-works/" target="_blank" rel="noopener">Figma blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-meta:t">
       <div class="c-head"><h3>Metastable failures</h3><label class="got"><input type="checkbox" id="k-l5-meta"><span>Got it</span></label></div>
       <ul>
         <li>A short trigger pushes the system into a bad state. The trigger ends. The outage does not.</li>
@@ -1620,7 +1737,7 @@ sequenceDiagram
       </ul>
       <span class="key">Retries are load. Budget them.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-meta:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   T["Trigger: spike or slow disk"] --> L["Latency rises"]
@@ -1632,10 +1749,11 @@ flowchart LR
       </pre></div>
       <figcaption>A feedback loop that sustains itself. Breaking any arrow in the cycle ends it.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-meta:c"><div class="case-h">Real case <b>Amazon DynamoDB</b><span class="yr">2015</span></div><div class="case-b"><div><h4>What happened</h4><p>Storage servers asked a metadata service for their partition lists. Bigger lists, from new secondary indexes, plus a short network blip made requests time out. The servers retried, which kept the service overloaded. Errors reached about 55%.</p></div><div><h4>The fix</h4><p>AWS paused requests to the metadata service to stop the retry storm, then added capacity. Later it split the metadata service into separate instances and watched list sizes.</p></div></div><div class="case-s">Source: <a href="https://aws.amazon.com/message/5467D2/" target="_blank" rel="noopener">AWS post-event summary</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-cell:t">
       <div class="c-head"><h3>Cells and blast radius</h3><label class="got"><input type="checkbox" id="k-l5-cell"><span>Got it</span></label></div>
       <ul>
         <li>Split the system into full, independent copies called <b>cells</b>.</li>
@@ -1644,7 +1762,7 @@ flowchart LR
         <li><b>Shuffle sharding</b> gives each customer a random set of nodes, so two customers rarely share all of them.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-cell:f">
       <div class="box">
       <svg viewBox="0 0 560 236" role="img" aria-label="A cell router sends customers to four independent cells. Cell 3 is down, so only a quarter of users are affected.">
         <rect x="170" y="8" width="220" height="36" rx="8" class="b"/><text x="280" y="31" class="tb" text-anchor="middle">Cell router, by customer ID</text>
@@ -1677,10 +1795,11 @@ flowchart LR
       </div>
       <figcaption>Cells cap the damage of any single failure. AWS uses this pattern for many core services.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-cell:c"><div class="case-h">Real case <b>Slack</b><span class="yr">2021–2023</span></div><div class="case-b"><div><h4>What happened</h4><p>On June 30, 2021, a network link to one AWS AZ kept failing on and off. Parts of the system disagreed about which servers were healthy, so the spare AZs did not contain the problem.</p></div><div><h4>The fix</h4><p>Slack turned each AZ into a cell. Services only talk to servers in their own AZ, and operators can drain traffic away from a bad AZ within minutes.</p></div></div><div class="case-s">Source: <a href="https://slack.engineering/slacks-migration-to-a-cellular-architecture/" target="_blank" rel="noopener">Slack engineering blog</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-dst:t">
       <div class="c-head"><h3>Deterministic simulation testing</h3><label class="got"><input type="checkbox" id="k-l5-dst"><span>Got it</span></label></div>
       <ul>
         <li>Run the whole cluster in one thread, with a fake network, disk and clock.</li>
@@ -1690,7 +1809,7 @@ flowchart LR
       </ul>
       <span class="key">Turn "can't reproduce" into a seed number.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-dst:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   S["Seed 8812"] --> SIM["Simulated network, disk, clock"]
@@ -1702,10 +1821,11 @@ flowchart LR
       </pre></div>
       <figcaption>Millions of seeds explore event orders that real hardware almost never produces.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-dst:c"><div class="case-h">Real case <b>FoundationDB (Apple)</b><span class="yr">2009–2015</span></div><div class="case-b"><div><h4>What happened</h4><p>Bugs in distributed databases show up only in rare orders of events. Normal tests almost never hit them, and they are nearly impossible to reproduce.</p></div><div><h4>The fix</h4><p>FoundationDB built a deterministic simulator first, then the database. It runs whole clusters with injected faults, and any failure replays exactly from its seed. Apple bought FoundationDB in 2015 and uses it for iCloud.</p></div></div><div class="case-s">Source: <a href="https://apple.github.io/foundationdb/testing.html" target="_blank" rel="noopener">FoundationDB docs</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-jepsen:t">
       <div class="c-head"><h3>Jepsen and history checking</h3><label class="got"><input type="checkbox" id="k-l5-jepsen"><span>Got it</span></label></div>
       <ul>
         <li>Jepsen tests real databases from the outside, like a black box.</li>
@@ -1714,7 +1834,7 @@ flowchart LR
         <li>It has found data loss in many popular databases. Read the reports at jepsen.io.</li>
       </ul>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-jepsen:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   C["Clients: reads, writes, transfers"] --> DB[("Database cluster")]
@@ -1726,10 +1846,11 @@ flowchart LR
       </pre></div>
       <figcaption>Jepsen proves bugs exist. It can never prove they are absent.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-jepsen:c"><div class="case-h">Real case <b>MongoDB</b><span class="yr">2020</span></div><div class="case-b"><div><h4>What happened</h4><p>Jepsen tested MongoDB 4.2.6 transactions. Under default settings, acknowledged writes were lost during network splits. Even the strongest settings showed anomalies such as read skew.</p></div><div><h4>The fix</h4><p>MongoDB found a bug in its transaction retry code and fixed it in 4.2.8. Jepsen advised setting read and write concerns on every transaction.</p></div></div><div class="case-s">Source: <a href="https://jepsen.io/analyses/mongodb-4.2.6" target="_blank" rel="noopener">Jepsen analysis</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-tla:t">
       <div class="c-head"><h3>Formal methods (TLA+)</h3><label class="got"><input type="checkbox" id="k-l5-tla"><span>Got it</span></label></div>
       <ul>
         <li>Write the design as a spec: states, actions, and rules that must always hold.</li>
@@ -1739,7 +1860,7 @@ flowchart LR
       </ul>
       <span class="key">Test the design before you write the code.</span>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-tla:f">
       <div class="box"><pre class="mermaid">
 flowchart LR
   D["Design idea"] --> S["TLA+ spec with invariants"]
@@ -1750,10 +1871,11 @@ flowchart LR
       </pre></div>
       <figcaption>The checker returns a step-by-step trace, so you see exactly how the design fails.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-tla:c"><div class="case-h">Real case <b>Amazon Web Services</b><span class="yr">2011–2015</span></div><div class="case-b"><div><h4>What happened</h4><p>Some of the worst bugs are design bugs. They need a rare order of failures and recoveries, so normal testing misses them.</p></div><div><h4>The fix</h4><p>AWS engineers wrote TLA+ specs for DynamoDB, S3 and other services. The model checker found a data-loss bug in DynamoDB replication whose shortest trace was 35 steps long.</p></div></div><div class="case-s">Source: <a href="https://www.amazon.science/publications/how-amazon-web-services-uses-formal-methods" target="_blank" rel="noopener">Amazon Science</a></div></div>
   </article>
 
   <article class="concept">
-    <div class="c-text">
+    <div class="c-text" data-anchor="k-l5-papers:t">
       <div class="c-head"><h3>The paper ladder</h3><label class="got"><input type="checkbox" id="k-l5-papers"><span>Got it</span></label></div>
       <div class="tbl"><table>
         <thead><tr><th>Paper</th><th>Year</th><th>Teaches</th></tr></thead>
@@ -1773,7 +1895,7 @@ flowchart LR
         </tbody>
       </table></div>
     </div>
-    <figure class="c-fig">
+    <figure class="c-fig" data-anchor="k-l5-papers:f">
       <div class="box"><pre class="mermaid">
 flowchart TD
   A["Lamport clocks"] --> B["FLP"]
@@ -1787,9 +1909,10 @@ flowchart TD
       </pre></div>
       <figcaption>One reading path. Each paper answers a problem the one before it left open.</figcaption>
     </figure>
+  <div class="case" data-anchor="k-l5-papers:c"><div class="case-h">Real case <b>Yahoo + Apache Hadoop</b><span class="yr">2006</span></div><div class="case-b"><div><h4>What happened</h4><p>Yahoo needed to process the whole web cheaply, but it had no system like Google&#x27;s.</p></div><div><h4>The fix</h4><p>A team led by Doug Cutting built Hadoop from the ideas in Google&#x27;s GFS and MapReduce papers. Yahoo ran it on thousands of servers, and it powered &quot;big data&quot; for a decade.</p></div></div><div class="case-s">Source: <a href="https://en.wikipedia.org/wiki/Apache_Hadoop" target="_blank" rel="noopener">Wikipedia: Apache Hadoop</a></div></div>
   </article>
 
-  <div class="watch">
+  <div class="watch" data-anchor="watch-l5">
     <h3>Watch · L5</h3>
     <ul>
       <li><a href="https://www.youtube.com/watch?v=4fFDFbi3toc" target="_blank" rel="noopener"><span class="who">Will Wilson</span><span class="what">Testing Distributed Systems w/ Deterministic Simulation<small>How FoundationDB found bugs nobody else could.</small></span><span class="kind">talk</span></a></li>
@@ -1803,7 +1926,7 @@ flowchart TD
 </section>
 
 <!-- ============ PRACTICE ============ -->
-<section class="practice" id="practice" style="--tc:var(--ink);--tt:var(--soft)">
+<section class="practice" id="practice" data-anchor="practice" style="--tc:var(--ink);--tt:var(--soft)">
   <h2>Practice problems</h2>
   <p class="lv-sub">Design each one on paper first. Then watch a walkthrough and compare.</p>
   <figure class="c-fig" style="margin-top:16px">
@@ -1837,43 +1960,869 @@ flowchart LR
     </ul>
   </div>
 </section>
-</main>
 
-<footer class="wrap">Video links checked October 2026. Latency figures are rough orders of magnitude. "Got it" ticks are saved in this browser only.</footer>
 
+<section class="gloss" id="glossary" data-anchor="gloss">
+  <h2>Abbreviations A–Z</h2>
+  <p class="lv-sub">Every short form in this guide, with its full form and meaning. On the page, tap any dotted-underlined abbreviation to see this in place.</p>
+  <div class="tbl"><table><thead><tr><th>Short</th><th>Full form</th><th>Meaning</th></tr></thead><tbody><tr><td>2PC</td><td>Two-Phase Commit</td><td>A coordinator asks every database to prepare, then tells all of them to commit, or all to abort.</td></tr><tr><td>ACID</td><td>Atomicity, Consistency, Isolation, Durability</td><td>The four promises of a database transaction: all or nothing, rules kept, no interference, saved for good.</td></tr><tr><td>ACIDRain</td><td>ACID + &quot;rain&quot; of requests</td><td>A 2017 study of attacks that flood an app with parallel requests to break its checks.</td></tr><tr><td>AP</td><td>Available + Partition-tolerant (CAP)</td><td>During a network split, the system keeps answering, even if the answer may be old.</td></tr><tr><td>API</td><td>Application Programming Interface</td><td>A defined way for one program to ask another program to do something.</td></tr><tr><td>avg</td><td>average</td><td>The mean value.</td></tr><tr><td>AWS</td><td>Amazon Web Services</td><td>Amazon&#x27;s cloud computing platform.</td></tr><tr><td>AZ</td><td>Availability Zone</td><td>One or more separate data centers inside a cloud region, with their own power and network.</td></tr><tr><td>B-tree</td><td>Balanced tree</td><td>A sorted tree on disk that databases use for indexes. Fast reads; it updates pages in place.</td></tr><tr><td>BFT</td><td>Byzantine Fault Tolerance</td><td>Staying correct even when some nodes lie or send conflicting messages.</td></tr><tr><td>BGP</td><td>Border Gateway Protocol</td><td>How networks on the internet tell each other which IP addresses they can reach.</td></tr><tr><td>CAP</td><td>Consistency, Availability, Partition tolerance</td><td>A theorem: during a network split, a system must give up either consistency or availability.</td></tr><tr><td>CDC</td><td>Change Data Capture</td><td>Reading a database&#x27;s own change log to stream every change to other systems.</td></tr><tr><td>CDN</td><td>Content Delivery Network</td><td>Servers in many cities that keep copies of files close to users.</td></tr><tr><td>CMU</td><td>Carnegie Mellon University</td><td>A US university known for computer science and database research.</td></tr><tr><td>CP</td><td>Consistent + Partition-tolerant (CAP)</td><td>During a network split, the system refuses some requests rather than return wrong data.</td></tr><tr><td>CPU</td><td>Central Processing Unit</td><td>The chip that runs program instructions.</td></tr><tr><td>CRDT</td><td>Conflict-free Replicated Data Type</td><td>A data type whose copies can be edited separately and always merge to the same result.</td></tr><tr><td>CSS</td><td>Cascading Style Sheets</td><td>The language that styles web pages.</td></tr><tr><td>DB</td><td>Database</td><td>A system that stores and finds data.</td></tr><tr><td>DBLog</td><td>Database Log</td><td>Netflix&#x27;s change data capture tool.</td></tr><tr><td>DC</td><td>Data Center</td><td>A building full of servers and network gear.</td></tr><tr><td>DDIA</td><td>Designing Data-Intensive Applications</td><td>Martin Kleppmann&#x27;s book on how data systems work.</td></tr><tr><td>DNS</td><td>Domain Name System</td><td>The internet&#x27;s phone book. It turns a name like example.com into an IP address.</td></tr><tr><td>DOMA</td><td>Domain-Oriented Microservice Architecture</td><td>Uber&#x27;s way to group microservices into domains, each behind one gateway.</td></tr><tr><td>DVD</td><td>Digital Versatile Disc</td><td>A movie disc. Netflix started by mailing them.</td></tr><tr><td>ELB</td><td>Elastic Load Balancing</td><td>AWS&#x27;s managed load balancer service.</td></tr><tr><td>EPaxos</td><td>Egalitarian Paxos</td><td>A Paxos variant where any replica can lead a command, not just one leader.</td></tr><tr><td>etcd</td><td>&quot;/etc&quot; + &quot;d&quot; for distributed</td><td>A key-value store that uses Raft. Kubernetes keeps its cluster state in it. The name joins the Unix config folder /etc with &quot;d&quot; for distributed.</td></tr><tr><td>F1 (Google)</td><td>Filial 1, a genetics term for a first-generation hybrid</td><td>Google&#x27;s SQL database built on Spanner, a hybrid of SQL and NoSQL strengths.</td></tr><tr><td>FLP</td><td>Fischer, Lynch, Paterson</td><td>Authors of the 1985 proof that no algorithm can always reach consensus in a fully asynchronous network if one node may crash.</td></tr><tr><td>G-counter</td><td>Grow-only counter</td><td>A CRDT counter that only goes up. It keeps one slot per replica.</td></tr><tr><td>GB</td><td>Gigabyte</td><td>About one billion bytes.</td></tr><tr><td>GC</td><td>Garbage Collection</td><td>A language runtime freeing unused memory. It can pause the program.</td></tr><tr><td>GFS</td><td>Google File System</td><td>Google&#x27;s 2003 file system for huge files spread over many cheap disks.</td></tr><tr><td>GKE</td><td>Google Kubernetes Engine</td><td>Google Cloud&#x27;s managed Kubernetes service.</td></tr><tr><td>GPS</td><td>Global Positioning System</td><td>A satellite system. Besides location, it gives very accurate time.</td></tr><tr><td>GraphQL</td><td>Graph Query Language</td><td>An API query language from Facebook. The client asks for exactly the fields it needs.</td></tr><tr><td>gRPC</td><td>gRPC Remote Procedure Calls (first built at Google)</td><td>A fast framework for calling functions on another server, over HTTP/2.</td></tr><tr><td>h, min, s</td><td>hour, minute, second</td><td>Units of time.</td></tr><tr><td>HAProxy</td><td>High Availability Proxy</td><td>A popular open-source load balancer and proxy.</td></tr><tr><td>HDD</td><td>Hard Disk Drive</td><td>A disk with spinning platters. Random reads are slow.</td></tr><tr><td>HTTP</td><td>HyperText Transfer Protocol</td><td>The protocol browsers and servers use to send requests and responses.</td></tr><tr><td>HTTP/2, HTTP/3</td><td>HTTP versions 2 and 3</td><td>Newer HTTP versions. HTTP/2 sends many requests on one connection. HTTP/3 runs on QUIC.</td></tr><tr><td>HTTPS</td><td>HTTP Secure</td><td>HTTP over an encrypted TLS connection.</td></tr><tr><td>ID</td><td>Identifier</td><td>A unique value that names one record.</td></tr><tr><td>iOS</td><td>iPhone Operating System</td><td>Apple&#x27;s operating system for iPhone.</td></tr><tr><td>IP</td><td>Internet Protocol</td><td>The rules for addressing and routing packets. An IP address is a machine&#x27;s network address.</td></tr><tr><td>JS</td><td>JavaScript</td><td>The programming language of web pages.</td></tr><tr><td>JSON</td><td>JavaScript Object Notation</td><td>A simple text format for data, like {&quot;name&quot;: &quot;Ana&quot;}.</td></tr><tr><td>JVM</td><td>Java Virtual Machine</td><td>The runtime that runs Java, Scala and Kotlin programs.</td></tr><tr><td>k</td><td>thousand</td><td>100k means 100,000.</td></tr><tr><td>KB</td><td>Kilobyte</td><td>About one thousand bytes.</td></tr><tr><td>KIP</td><td>Kafka Improvement Proposal</td><td>A written design proposal for changing Apache Kafka.</td></tr><tr><td>KRaft</td><td>Kafka Raft</td><td>Kafka&#x27;s built-in, Raft-based metadata system. It replaced ZooKeeper.</td></tr><tr><td>KV</td><td>Key-Value</td><td>A store that maps each key to a value, like a giant dictionary.</td></tr><tr><td>L0, L1, L2 (storage diagram)</td><td>Level 0, 1, 2 of an LSM tree</td><td>Levels of sorted files. Compaction moves data down to bigger levels.</td></tr><tr><td>L1 cache (latency chart)</td><td>Level-1 cache</td><td>The smallest, fastest memory inside a CPU core.</td></tr><tr><td>L1–L5 (this guide)</td><td>Level 1 to Level 5</td><td>The five levels of this guide, from Basics to Hardcore.</td></tr><tr><td>L4 (load balancing)</td><td>OSI Layer 4: the transport layer</td><td>The balancer routes by IP address and port. It does not read the request.</td></tr><tr><td>L7 (load balancing)</td><td>OSI Layer 7: the application layer</td><td>The balancer reads the HTTP request and routes by path, header or cookie.</td></tr><tr><td>LRU</td><td>Least Recently Used</td><td>A cache rule: when full, drop the item unused for the longest time.</td></tr><tr><td>LSM</td><td>Log-Structured Merge (tree)</td><td>A storage design that appends writes, then merges sorted files in the background.</td></tr><tr><td>LWW</td><td>Last Write Wins</td><td>A conflict rule: keep the value with the latest timestamp.</td></tr><tr><td>M</td><td>million</td><td>10M means 10,000,000.</td></tr><tr><td>MIT</td><td>Massachusetts Institute of Technology</td><td>A US university. Course 6.824 (now 6.5840) teaches distributed systems.</td></tr><tr><td>ms, µs, ns</td><td>millisecond, microsecond, nanosecond</td><td>One thousandth, one millionth and one billionth of a second.</td></tr><tr><td>MySQL</td><td>&quot;My&quot; + SQL</td><td>A popular open-source relational database, named after the co-founder&#x27;s daughter, My.</td></tr><tr><td>N, W, R</td><td>Number of copies, Write quorum, Read quorum</td><td>Quorum settings: a write waits for W of N copies, a read asks R of N copies.</td></tr><tr><td>N1–N4</td><td>Node 1 to Node 4</td><td>The four servers in the Byzantine faults diagram.</td></tr><tr><td>NoSQL</td><td>Not only SQL</td><td>Databases that are not relational tables: key-value, document, wide-column, graph.</td></tr><tr><td>NTP</td><td>Network Time Protocol</td><td>Keeps computer clocks in sync over the network.</td></tr><tr><td>OK</td><td>okay</td><td>In &quot;200 OK&quot;, the HTTP status code that means the request worked.</td></tr><tr><td>OSI</td><td>Open Systems Interconnection (model)</td><td>A 7-layer model of networking, from cables (layer 1) to apps (layer 7).</td></tr><tr><td>P0, P1, P2</td><td>Partition 0, 1, 2</td><td>The partitions of a Kafka topic in the event-log diagram.</td></tr><tr><td>p95, p99, p99.9</td><td>95th, 99th, 99.9th percentile</td><td>The time that 95%, 99% or 99.9% of requests beat. p99 = 100 ms means 1 in 100 requests is slower than 100 ms.</td></tr><tr><td>PACELC</td><td>if Partition: Availability or Consistency; Else: Latency or Consistency</td><td>CAP extended: even with no network split, you trade speed for consistency.</td></tr><tr><td>PBFT</td><td>Practical Byzantine Fault Tolerance</td><td>A 1999 protocol that stays correct with lying nodes if there are at least 3f + 1 replicas.</td></tr><tr><td>PostgreSQL (Postgres)</td><td>&quot;Post-Ingres&quot; + SQL</td><td>A popular open-source relational database. It followed an older database called Ingres.</td></tr><tr><td>QUIC</td><td>originally &quot;Quick UDP Internet Connections&quot;</td><td>A fast transport protocol from Google. HTTP/3 runs on it.</td></tr><tr><td>RAM</td><td>Random Access Memory</td><td>A computer&#x27;s fast working memory. It is cleared when the power goes off.</td></tr><tr><td>req/s</td><td>requests per second</td><td>How many requests arrive each second.</td></tr><tr><td>REST</td><td>REpresentational State Transfer</td><td>An API style: resources live at URLs, and you use HTTP verbs like GET and POST on them.</td></tr><tr><td>RICON</td><td>Riak Conference</td><td>A distributed systems conference run by Basho, the company behind the Riak database.</td></tr><tr><td>RPC</td><td>Remote Procedure Call</td><td>Calling a function that runs on another machine as if it ran locally.</td></tr><tr><td>S3</td><td>Simple Storage Service</td><td>Amazon&#x27;s object storage service.</td></tr><tr><td>SLI</td><td>Service Level Indicator</td><td>What you measure, like p99 latency or the error rate.</td></tr><tr><td>SLO</td><td>Service Level Objective</td><td>The target for an SLI, like &quot;99.9% of requests succeed&quot;.</td></tr><tr><td>SPDY</td><td>pronounced &quot;speedy&quot; (not an acronym)</td><td>Google&#x27;s web protocol that became HTTP/2.</td></tr><tr><td>SQL</td><td>Structured Query Language</td><td>The language for querying relational databases.</td></tr><tr><td>SQS</td><td>Simple Queue Service</td><td>Amazon&#x27;s managed message queue.</td></tr><tr><td>SRE</td><td>Site Reliability Engineering</td><td>Google&#x27;s practice of running systems with software engineering. Also the engineers who do it.</td></tr><tr><td>SSD</td><td>Solid-State Drive</td><td>Flash storage with no moving parts. Much faster than an HDD.</td></tr><tr><td>SSTable</td><td>Sorted String Table</td><td>A file of sorted key-value pairs that never changes once written. LSM engines use them.</td></tr><tr><td>TB</td><td>Terabyte</td><td>About one trillion bytes.</td></tr><tr><td>TCP</td><td>Transmission Control Protocol</td><td>Reliable, in-order delivery of bytes between two machines.</td></tr><tr><td>TLA+</td><td>Temporal Logic of Actions</td><td>Leslie Lamport&#x27;s language for writing down a design so a tool can check it.</td></tr><tr><td>TLC</td><td>the TLA+ model checker</td><td>The tool that runs every possible order of steps in a TLA+ spec.</td></tr><tr><td>TLS</td><td>Transport Layer Security</td><td>Encryption for network connections. It is the &quot;S&quot; in HTTPS.</td></tr><tr><td>TTL</td><td>Time To Live</td><td>How long a cached item stays valid before it expires.</td></tr><tr><td>Txn</td><td>Transaction</td><td>A group of database operations that succeed or fail together.</td></tr><tr><td>UDB</td><td>User Database</td><td>Facebook&#x27;s main MySQL database of user data.</td></tr><tr><td>UDP</td><td>User Datagram Protocol</td><td>Fast packets with no delivery guarantee and no connection setup.</td></tr><tr><td>URL</td><td>Uniform Resource Locator</td><td>A web address.</td></tr><tr><td>US</td><td>United States</td><td></td></tr><tr><td>USD</td><td>United States dollar</td><td></td></tr><tr><td>USENIX ATC</td><td>USENIX Annual Technical Conference</td><td>A computer systems conference. USENIX started as the Unix users group.</td></tr><tr><td>VM</td><td>Virtual Machine</td><td>A software computer that runs on a physical one.</td></tr><tr><td>vs</td><td>versus</td><td>Compared with.</td></tr><tr><td>WAL</td><td>Write-Ahead Log</td><td>A log on disk that records each change before it is applied, so a crash can be recovered.</td></tr></tbody></table></div>
+</section>
+
+<footer data-anchor="foot">Version 2 · October 2026. <a href="https://seanrmadanu.github.io/system-design/v1/" target="_blank" rel="noopener">Version 1</a> stays available, unchanged. Video links checked October 2026. Latency figures are rough.</footer>
+
+<svg id="ink" aria-hidden="true"><g id="ink-strokes"></g><g id="ink-live"></g><rect id="ask-rect" class="ask-rect" x="0" y="0" width="0" height="0" visibility="hidden"/></svg>
+</div></div>
+
+<div class="toolbar" role="toolbar" aria-label="Notebook tools"><button class="tool" data-tool="read" aria-pressed="true" title="Read and tap links (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.7-1.6 5.3-1.6 8 0 2.7-1.6 5.3-1.6 8 0V19c-2.7-1.6-5.3-1.6-8 0-2.7-1.6-5.3-1.6-8 0z"/><path d="M12 5.5V19"/></svg>Read</button><button class="tool" data-tool="pen" aria-pressed="false" title="Pen (P)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.2-4.4L15.8 5a2.1 2.1 0 0 1 3 3L8.4 18.6z"/><path d="M14 7l3 3"/></svg>Pen</button><div class="sw" role="group" aria-label="Pen color"><button data-color="ink" aria-label="Black pen"></button><button data-color="blue" aria-label="Blue pen"></button><button data-color="red" aria-label="Red pen"></button><button data-color="green" aria-label="Green pen"></button></div><button class="tool" data-tool="hl" aria-pressed="false" title="Highlighter (H)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-8 8H7v-5z"/><path d="M7 12l5 5"/><path d="M4 21h9"/></svg>Highlight</button><button class="tool" data-tool="erase" aria-pressed="false" title="Eraser (E)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20h13"/><path d="M4 15.5l9.5-9.5a2 2 0 0 1 2.8 0l2.7 2.7a2 2 0 0 1 0 2.8L12 18.5H7z"/><path d="M9 10.5l5.5 5.5"/></svg>Eraser</button><button class="tool" data-tool="ask" aria-pressed="false" title="Ask Claude: draw a box around anything (A)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11h-9l-5 4v-4H4z"/><path d="M10 9.2a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9v.4"/><path d="M12 14.2v.1"/></svg>Ask</button><span class="sep"></span><button class="tool" id="undo" title="Undo (Cmd+Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5L4 10l5 5"/><path d="M4 10h10a5 5 0 0 1 0 10h-3"/></svg>Undo</button><button class="tool" id="qbtn" title="All questions and answers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>Questions<b id="qcount"></b></button></div>
+<div class="pop" id="pop" hidden role="dialog" aria-label="Abbreviation"></div>
+<div class="pop" id="askpop" hidden role="dialog" aria-label="Ask Claude"><h4>Ask Claude about this part</h4><p>Write your question here with the Pencil, or type it. Leave it empty if you already wrote it on the page.</p><textarea id="askq" rows="3" placeholder="Why can a follower be behind the leader?"></textarea><div class="row"><button class="btn" id="ask-cancel">Cancel</button><button class="btn primary" id="ask-go">Ask Claude</button></div></div>
+<aside class="drawer" id="drawer" hidden aria-label="Questions and answers"><header><h3>Questions</h3><button class="btn small" id="drawer-close">Close</button></header><div class="ask"><p class="note" id="asknote" hidden></p><div id="gq-box" hidden><textarea id="gq" rows="2" placeholder="Ask anything about system design"></textarea><div class="row"><button class="btn primary" id="gq-go">Ask Claude</button></div></div></div><div class="list" id="qlist"></div></aside>
+<div class="hint" id="hint" hidden>Apple Pencil writes anywhere. Fingers scroll.</div>
+<script type="application/json" id="gloss-data">[{"k": "2PC", "f": "Two-Phase Commit", "m": "A coordinator asks every database to prepare, then tells all of them to commit, or all to abort.", "w": ["2PC"]}, {"k": "ACID", "f": "Atomicity, Consistency, Isolation, Durability", "m": "The four promises of a database transaction: all or nothing, rules kept, no interference, saved for good.", "w": ["ACID"]}, {"k": "ACIDRain", "f": "ACID + \"rain\" of requests", "m": "A 2017 study of attacks that flood an app with parallel requests to break its checks.", "w": []}, {"k": "API", "f": "Application Programming Interface", "m": "A defined way for one program to ask another program to do something.", "w": ["API", "APIs"]}, {"k": "AP", "f": "Available + Partition-tolerant (CAP)", "m": "During a network split, the system keeps answering, even if the answer may be old.", "w": ["AP"]}, {"k": "avg", "f": "average", "m": "The mean value.", "w": []}, {"k": "AWS", "f": "Amazon Web Services", "m": "Amazon's cloud computing platform.", "w": ["AWS"]}, {"k": "AZ", "f": "Availability Zone", "m": "One or more separate data centers inside a cloud region, with their own power and network.", "w": ["AZ", "AZs"]}, {"k": "B-tree", "f": "Balanced tree", "m": "A sorted tree on disk that databases use for indexes. Fast reads; it updates pages in place.", "w": ["B-tree"]}, {"k": "BFT", "f": "Byzantine Fault Tolerance", "m": "Staying correct even when some nodes lie or send conflicting messages.", "w": ["BFT"]}, {"k": "BGP", "f": "Border Gateway Protocol", "m": "How networks on the internet tell each other which IP addresses they can reach.", "w": ["BGP"]}, {"k": "CAP", "f": "Consistency, Availability, Partition tolerance", "m": "A theorem: during a network split, a system must give up either consistency or availability.", "w": ["CAP"]}, {"k": "CDC", "f": "Change Data Capture", "m": "Reading a database's own change log to stream every change to other systems.", "w": ["CDC"]}, {"k": "CDN", "f": "Content Delivery Network", "m": "Servers in many cities that keep copies of files close to users.", "w": ["CDN", "CDNs"]}, {"k": "CMU", "f": "Carnegie Mellon University", "m": "A US university known for computer science and database research.", "w": []}, {"k": "CP", "f": "Consistent + Partition-tolerant (CAP)", "m": "During a network split, the system refuses some requests rather than return wrong data.", "w": ["CP"]}, {"k": "CPU", "f": "Central Processing Unit", "m": "The chip that runs program instructions.", "w": ["CPU"]}, {"k": "CRDT", "f": "Conflict-free Replicated Data Type", "m": "A data type whose copies can be edited separately and always merge to the same result.", "w": ["CRDT", "CRDTs"]}, {"k": "CSS", "f": "Cascading Style Sheets", "m": "The language that styles web pages.", "w": ["CSS"]}, {"k": "DB", "f": "Database", "m": "A system that stores and finds data.", "w": ["DB"]}, {"k": "DC", "f": "Data Center", "m": "A building full of servers and network gear.", "w": ["DC"]}, {"k": "DDIA", "f": "Designing Data-Intensive Applications", "m": "Martin Kleppmann's book on how data systems work.", "w": ["DDIA"]}, {"k": "DNS", "f": "Domain Name System", "m": "The internet's phone book. It turns a name like example.com into an IP address.", "w": ["DNS"]}, {"k": "DOMA", "f": "Domain-Oriented Microservice Architecture", "m": "Uber's way to group microservices into domains, each behind one gateway.", "w": ["DOMA"]}, {"k": "ELB", "f": "Elastic Load Balancing", "m": "AWS's managed load balancer service.", "w": ["ELB"]}, {"k": "EPaxos", "f": "Egalitarian Paxos", "m": "A Paxos variant where any replica can lead a command, not just one leader.", "w": ["EPaxos"]}, {"k": "etcd", "f": "\"/etc\" + \"d\" for distributed", "m": "A key-value store that uses Raft. Kubernetes keeps its cluster state in it. The name joins the Unix config folder /etc with \"d\" for distributed.", "w": ["etcd"]}, {"k": "FLP", "f": "Fischer, Lynch, Paterson", "m": "Authors of the 1985 proof that no algorithm can always reach consensus in a fully asynchronous network if one node may crash.", "w": ["FLP"]}, {"k": "G-counter", "f": "Grow-only counter", "m": "A CRDT counter that only goes up. It keeps one slot per replica.", "w": ["G-counter"]}, {"k": "GB", "f": "Gigabyte", "m": "About one billion bytes.", "w": ["GB"]}, {"k": "GC", "f": "Garbage Collection", "m": "A language runtime freeing unused memory. It can pause the program.", "w": ["GC"]}, {"k": "GFS", "f": "Google File System", "m": "Google's 2003 file system for huge files spread over many cheap disks.", "w": ["GFS"]}, {"k": "GKE", "f": "Google Kubernetes Engine", "m": "Google Cloud's managed Kubernetes service.", "w": ["GKE"]}, {"k": "GPS", "f": "Global Positioning System", "m": "A satellite system. Besides location, it gives very accurate time.", "w": ["GPS"]}, {"k": "gRPC", "f": "gRPC Remote Procedure Calls (first built at Google)", "m": "A fast framework for calling functions on another server, over HTTP/2.", "w": ["gRPC"]}, {"k": "h, min, s", "f": "hour, minute, second", "m": "Units of time.", "w": []}, {"k": "HAProxy", "f": "High Availability Proxy", "m": "A popular open-source load balancer and proxy.", "w": ["HAProxy"]}, {"k": "HDD", "f": "Hard Disk Drive", "m": "A disk with spinning platters. Random reads are slow.", "w": ["HDD"]}, {"k": "HTTP", "f": "HyperText Transfer Protocol", "m": "The protocol browsers and servers use to send requests and responses.", "w": ["HTTP"]}, {"k": "HTTP/2, HTTP/3", "f": "HTTP versions 2 and 3", "m": "Newer HTTP versions. HTTP/2 sends many requests on one connection. HTTP/3 runs on QUIC.", "w": []}, {"k": "HTTPS", "f": "HTTP Secure", "m": "HTTP over an encrypted TLS connection.", "w": ["HTTPS"]}, {"k": "ID", "f": "Identifier", "m": "A unique value that names one record.", "w": ["ID", "IDs"]}, {"k": "iOS", "f": "iPhone Operating System", "m": "Apple's operating system for iPhone.", "w": ["iOS"]}, {"k": "IP", "f": "Internet Protocol", "m": "The rules for addressing and routing packets. An IP address is a machine's network address.", "w": ["IP"]}, {"k": "JS", "f": "JavaScript", "m": "The programming language of web pages.", "w": ["JS"]}, {"k": "JSON", "f": "JavaScript Object Notation", "m": "A simple text format for data, like {\"name\": \"Ana\"}.", "w": ["JSON"]}, {"k": "JVM", "f": "Java Virtual Machine", "m": "The runtime that runs Java, Scala and Kotlin programs.", "w": ["JVM"]}, {"k": "k", "f": "thousand", "m": "100k means 100,000.", "w": []}, {"k": "KB", "f": "Kilobyte", "m": "About one thousand bytes.", "w": ["KB"]}, {"k": "KIP", "f": "Kafka Improvement Proposal", "m": "A written design proposal for changing Apache Kafka.", "w": ["KIP"]}, {"k": "KRaft", "f": "Kafka Raft", "m": "Kafka's built-in, Raft-based metadata system. It replaced ZooKeeper.", "w": ["KRaft"]}, {"k": "KV", "f": "Key-Value", "m": "A store that maps each key to a value, like a giant dictionary.", "w": ["KV"]}, {"k": "L0, L1, L2 (storage diagram)", "f": "Level 0, 1, 2 of an LSM tree", "m": "Levels of sorted files. Compaction moves data down to bigger levels.", "w": []}, {"k": "L1 cache (latency chart)", "f": "Level-1 cache", "m": "The smallest, fastest memory inside a CPU core.", "w": []}, {"k": "L1–L5 (this guide)", "f": "Level 1 to Level 5", "m": "The five levels of this guide, from Basics to Hardcore.", "w": []}, {"k": "L4 (load balancing)", "f": "OSI Layer 4: the transport layer", "m": "The balancer routes by IP address and port. It does not read the request.", "w": []}, {"k": "L7 (load balancing)", "f": "OSI Layer 7: the application layer", "m": "The balancer reads the HTTP request and routes by path, header or cookie.", "w": []}, {"k": "LRU", "f": "Least Recently Used", "m": "A cache rule: when full, drop the item unused for the longest time.", "w": ["LRU"]}, {"k": "LSM", "f": "Log-Structured Merge (tree)", "m": "A storage design that appends writes, then merges sorted files in the background.", "w": ["LSM", "LSM-tree"]}, {"k": "LWW", "f": "Last Write Wins", "m": "A conflict rule: keep the value with the latest timestamp.", "w": ["LWW"]}, {"k": "M", "f": "million", "m": "10M means 10,000,000.", "w": []}, {"k": "MIT", "f": "Massachusetts Institute of Technology", "m": "A US university. Course 6.824 (now 6.5840) teaches distributed systems.", "w": []}, {"k": "ms, µs, ns", "f": "millisecond, microsecond, nanosecond", "m": "One thousandth, one millionth and one billionth of a second.", "w": []}, {"k": "MySQL", "f": "\"My\" + SQL", "m": "A popular open-source relational database, named after the co-founder's daughter, My.", "w": []}, {"k": "N, W, R", "f": "Number of copies, Write quorum, Read quorum", "m": "Quorum settings: a write waits for W of N copies, a read asks R of N copies.", "w": []}, {"k": "NoSQL", "f": "Not only SQL", "m": "Databases that are not relational tables: key-value, document, wide-column, graph.", "w": ["NoSQL"]}, {"k": "NTP", "f": "Network Time Protocol", "m": "Keeps computer clocks in sync over the network.", "w": ["NTP"]}, {"k": "OSI", "f": "Open Systems Interconnection (model)", "m": "A 7-layer model of networking, from cables (layer 1) to apps (layer 7).", "w": ["OSI"]}, {"k": "P0, P1, P2", "f": "Partition 0, 1, 2", "m": "The partitions of a Kafka topic in the event-log diagram.", "w": []}, {"k": "p95, p99, p99.9", "f": "95th, 99th, 99.9th percentile", "m": "The time that 95%, 99% or 99.9% of requests beat. p99 = 100 ms means 1 in 100 requests is slower than 100 ms.", "w": ["p95", "p99", "p99.9"]}, {"k": "PACELC", "f": "if Partition: Availability or Consistency; Else: Latency or Consistency", "m": "CAP extended: even with no network split, you trade speed for consistency.", "w": ["PACELC"]}, {"k": "PBFT", "f": "Practical Byzantine Fault Tolerance", "m": "A 1999 protocol that stays correct with lying nodes if there are at least 3f + 1 replicas.", "w": ["PBFT"]}, {"k": "PostgreSQL (Postgres)", "f": "\"Post-Ingres\" + SQL", "m": "A popular open-source relational database. It followed an older database called Ingres.", "w": []}, {"k": "QUIC", "f": "originally \"Quick UDP Internet Connections\"", "m": "A fast transport protocol from Google. HTTP/3 runs on it.", "w": ["QUIC"]}, {"k": "RAM", "f": "Random Access Memory", "m": "A computer's fast working memory. It is cleared when the power goes off.", "w": ["RAM"]}, {"k": "req/s", "f": "requests per second", "m": "How many requests arrive each second.", "w": []}, {"k": "REST", "f": "REpresentational State Transfer", "m": "An API style: resources live at URLs, and you use HTTP verbs like GET and POST on them.", "w": ["REST"]}, {"k": "RICON", "f": "Riak Conference", "m": "A distributed systems conference run by Basho, the company behind the Riak database.", "w": []}, {"k": "RPC", "f": "Remote Procedure Call", "m": "Calling a function that runs on another machine as if it ran locally.", "w": ["RPC"]}, {"k": "S3", "f": "Simple Storage Service", "m": "Amazon's object storage service.", "w": ["S3"]}, {"k": "SLI", "f": "Service Level Indicator", "m": "What you measure, like p99 latency or the error rate.", "w": ["SLI"]}, {"k": "SLO", "f": "Service Level Objective", "m": "The target for an SLI, like \"99.9% of requests succeed\".", "w": ["SLO", "SLOs"]}, {"k": "SPDY", "f": "pronounced \"speedy\" (not an acronym)", "m": "Google's web protocol that became HTTP/2.", "w": ["SPDY"]}, {"k": "SQL", "f": "Structured Query Language", "m": "The language for querying relational databases.", "w": ["SQL"]}, {"k": "SQS", "f": "Simple Queue Service", "m": "Amazon's managed message queue.", "w": ["SQS"]}, {"k": "SRE", "f": "Site Reliability Engineering", "m": "Google's practice of running systems with software engineering. Also the engineers who do it.", "w": ["SRE"]}, {"k": "SSD", "f": "Solid-State Drive", "m": "Flash storage with no moving parts. Much faster than an HDD.", "w": ["SSD"]}, {"k": "SSTable", "f": "Sorted String Table", "m": "A file of sorted key-value pairs that never changes once written. LSM engines use them.", "w": ["SSTable", "SSTables"]}, {"k": "TB", "f": "Terabyte", "m": "About one trillion bytes.", "w": ["TB"]}, {"k": "TCP", "f": "Transmission Control Protocol", "m": "Reliable, in-order delivery of bytes between two machines.", "w": ["TCP"]}, {"k": "TLA+", "f": "Temporal Logic of Actions", "m": "Leslie Lamport's language for writing down a design so a tool can check it.", "w": ["TLA+"]}, {"k": "TLC", "f": "the TLA+ model checker", "m": "The tool that runs every possible order of steps in a TLA+ spec.", "w": []}, {"k": "TLS", "f": "Transport Layer Security", "m": "Encryption for network connections. It is the \"S\" in HTTPS.", "w": ["TLS"]}, {"k": "TTL", "f": "Time To Live", "m": "How long a cached item stays valid before it expires.", "w": ["TTL", "TTLs"]}, {"k": "Txn", "f": "Transaction", "m": "A group of database operations that succeed or fail together.", "w": []}, {"k": "UDB", "f": "User Database", "m": "Facebook's main MySQL database of user data.", "w": ["UDB"]}, {"k": "UDP", "f": "User Datagram Protocol", "m": "Fast packets with no delivery guarantee and no connection setup.", "w": ["UDP"]}, {"k": "URL", "f": "Uniform Resource Locator", "m": "A web address.", "w": ["URL", "URLs"]}, {"k": "US", "f": "United States", "m": "", "w": ["US"]}, {"k": "USD", "f": "United States dollar", "m": "", "w": []}, {"k": "USENIX ATC", "f": "USENIX Annual Technical Conference", "m": "A computer systems conference. USENIX started as the Unix users group.", "w": []}, {"k": "VM", "f": "Virtual Machine", "m": "A software computer that runs on a physical one.", "w": ["VM"]}, {"k": "vs", "f": "versus", "m": "Compared with.", "w": []}, {"k": "WAL", "f": "Write-Ahead Log", "m": "A log on disk that records each change before it is applied, so a crash can be recovered.", "w": ["WAL"]}, {"k": "DBLog", "f": "Database Log", "m": "Netflix's change data capture tool.", "w": []}, {"k": "DVD", "f": "Digital Versatile Disc", "m": "A movie disc. Netflix started by mailing them.", "w": ["DVD"]}, {"k": "F1 (Google)", "f": "Filial 1, a genetics term for a first-generation hybrid", "m": "Google's SQL database built on Spanner, a hybrid of SQL and NoSQL strengths.", "w": []}, {"k": "GraphQL", "f": "Graph Query Language", "m": "An API query language from Facebook. The client asks for exactly the fields it needs.", "w": []}, {"k": "N1–N4", "f": "Node 1 to Node 4", "m": "The four servers in the Byzantine faults diagram.", "w": []}, {"k": "OK", "f": "okay", "m": "In \"200 OK\", the HTTP status code that means the request worked.", "w": []}]</script>
 <script>
-(function(){
-  var KEY = 'sdl-progress-v1', saved = {};
-  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
-  var levels = ['l1','l2','l3','l4','l5'];
-  function update(){
-    levels.forEach(function(l){
-      var all = document.querySelectorAll('#' + l + ' .got input'), done = 0;
-      all.forEach(function(x){ if (x.checked) done++; });
-      var text = done + ' / ' + all.length + ' done';
-      var c = document.querySelector('[data-count="' + l + '"]'); if (c) c.textContent = text;
-      var p = document.querySelector('[data-pg="' + l + '"]'); if (p) p.textContent = text;
-    });
+(function () {
+'use strict';
+/* ================= core ================= */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const W = 960;                       // design width of the page
+const SVGNS = 'http://www.w3.org/2000/svg';
+const DEV = Math.random().toString(36).slice(2, 10);
+const LEVELS = ['l1', 'l2', 'l3', 'l4', 'l5'];
+const stage = $('#stage'), paper = $('#paper'), inkSvg = $('#ink');
+const gStrokes = $('#ink-strokes'), gLive = $('#ink-live'), askRectEl = $('#ask-rect');
+let scale = 1;
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid8 = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ================= abbreviations ================= */
+const GLOSS = JSON.parse($('#gloss-data').textContent);
+const abByKey = new Map(GLOSS.map(g => [g.k, g]));
+const abByTok = new Map();
+GLOSS.forEach(g => (g.w || []).forEach(t => abByTok.set(t, g)));
+const abTokens = Array.from(abByTok.keys()).sort((a, b) => b.length - a.length);
+const abRe = new RegExp('(^|[^A-Za-z0-9_+\\-])(' + abTokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?![A-Za-z0-9_+]|-[A-Za-z])', 'g');
+const AB_SKIP = 'svg,pre,script,style,a,button,label,textarea,abbr,code,.gloss,#ink,.case-s,.mermaid';
+function wrapAbbreviations(root) {
+  if (!root || !abTokens.length) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      if (!n.nodeValue || !/[A-Za-z]/.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
+      const p = n.parentElement;
+      return (!p || p.closest(AB_SKIP)) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = []; let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(node => {
+    const text = node.nodeValue; let m, last = 0, frag = null;
+    abRe.lastIndex = 0;
+    while ((m = abRe.exec(text))) {
+      const start = m.index + m[1].length, tok = m[2], g = abByTok.get(tok);
+      if (!g) continue;
+      frag = frag || document.createDocumentFragment();
+      frag.appendChild(document.createTextNode(text.slice(last, start)));
+      const el = document.createElement('abbr');
+      el.className = 'ab'; el.dataset.ab = g.k; el.title = g.f; el.textContent = tok;
+      frag.appendChild(el);
+      last = start + tok.length;
+    }
+    if (frag) { frag.appendChild(document.createTextNode(text.slice(last))); node.parentNode.replaceChild(frag, node); }
+  });
+}
+
+/* ================= popovers ================= */
+const pop = $('#pop'), askPop = $('#askpop');
+function place(el, r) {
+  el.hidden = false;
+  const pw = el.offsetWidth, ph = el.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, m = 10;
+  const left = Math.min(Math.max(m, r.left), Math.max(m, vw - pw - m));
+  let top = r.bottom + 8;
+  if (top + ph > vh - 84) top = Math.max(58, r.top - ph - 8);
+  el.style.left = left + 'px'; el.style.top = top + 'px';
+}
+function closePops() { pop.hidden = true; if (!askPop.hidden) cancelAsk(); }
+document.addEventListener('pointerdown', e => {
+  if (!pop.hidden && !pop.contains(e.target) && !e.target.closest('abbr.ab')) pop.hidden = true;
+}, true);
+pop.addEventListener('click', e => { if (e.target.closest('[data-close]')) pop.hidden = true; });
+document.addEventListener('click', e => {
+  const ab = e.target.closest('abbr.ab');
+  if (!ab || tool !== 'read') return;
+  const g = abByKey.get(ab.dataset.ab);
+  if (!g) return;
+  e.preventDefault();
+  pop.innerHTML = '<div class="ab-k">' + esc(g.k) + '</div><div class="ab-f">' + esc(g.f) + '</div>' +
+    (g.m ? '<p>' + esc(g.m) + '</p>' : '') +
+    '<div class="row"><a class="btn small" href="#glossary">All abbreviations</a><button class="btn small" data-close>Close</button></div>';
+  place(pop, ab.getBoundingClientRect());
+});
+
+/* ================= layout: scale the fixed page to the screen ================= */
+let anchors = [], anchorById = new Map();
+function measureAnchors() {
+  const pr = paper.getBoundingClientRect();
+  anchors = $$('[data-anchor]', paper).map(el => {
+    const r = el.getBoundingClientRect();
+    return { id: el.dataset.anchor, el, x: (r.left - pr.left) / scale, y: (r.top - pr.top) / scale, h: r.height / scale };
+  }).filter(a => a.h > 0).sort((a, b) => a.y - b.y);
+  anchorById = new Map(anchors.map(a => [a.id, a]));
+}
+function anchorFor(y) {
+  let best = anchors[0] || null;
+  for (const a of anchors) { if (a.y <= y) best = a; else break; }
+  return best;
+}
+function fit() {
+  const vw = stage.clientWidth || document.documentElement.clientWidth;
+  const s = Math.min(vw / W, 1.35);
+  if (Math.abs(s - scale) > 0.0005) {
+    const stageTop = stage.getBoundingClientRect().top + window.scrollY;
+    const yDesign = (window.scrollY - stageTop) / scale;
+    scale = s;
+    applyTransform(vw);
+    if (yDesign > 0) window.scrollTo(0, stageTop + yDesign * s);
+  } else applyTransform(vw);
+  measureAnchors();
+  positionGroups();
+}
+function applyTransform(vw) {
+  const left = Math.max(0, (vw - W * scale) / 2);
+  stage.classList.add('scaled');
+  paper.style.transform = 'translate(' + left.toFixed(1) + 'px,0) scale(' + scale.toFixed(4) + ')';
+  stage.style.height = Math.ceil(paper.offsetHeight * scale) + 'px';
+}
+let fitQueued = false;
+function queueFit() { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fit(); }); }
+
+/* in-page links: scroll with the app bar in mind */
+function goTo(el) {
+  const r = el.getBoundingClientRect();
+  window.scrollTo({ top: Math.max(0, window.scrollY + r.top - 60), behavior: 'smooth' });
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  const t = document.getElementById(a.getAttribute('href').slice(1));
+  if (!t) return;
+  e.preventDefault(); pop.hidden = true; goTo(t);
+});
+
+/* ================= progress ("Got it") ================= */
+const progress = { done: lsGet('sdl2-progress', null) || lsGet('sdl-progress-v1', {}) || {} };
+function renderProgress() {
+  LEVELS.forEach(l => {
+    const all = $$('#' + l + ' .got input'); let done = 0;
+    all.forEach(x => { x.checked = !!progress.done[x.id]; if (x.checked) done++; });
+    const t = done + ' / ' + all.length + ' done';
+    $$('[data-count="' + l + '"],[data-pg="' + l + '"]').forEach(el => { el.textContent = t; });
+    const em = $('.pill[data-l="' + l + '"] em'); if (em) em.textContent = done + '/' + all.length;
+  });
+}
+paper.addEventListener('change', e => {
+  const x = e.target;
+  if (!x.matches || !x.matches('.got input')) return;
+  if (x.checked) progress.done[x.id] = true; else delete progress.done[x.id];
+  renderProgress(); saveProgress();
+});
+
+/* app bar: highlight the level on screen */
+const pills = $$('.pill[href^="#"]');
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => es.forEach(en => {
+    if (en.isIntersecting) pills.forEach(p => p.classList.toggle('on', p.getAttribute('href') === '#' + en.target.id));
+  }), { rootMargin: '-45% 0px -50% 0px' });
+  ['l1', 'l2', 'l3', 'l4', 'l5', 'practice', 'glossary'].forEach(id => { const s = document.getElementById(id); if (s) io.observe(s); });
+}
+
+/* ================= storage: Claude account (db) or this device (localStorage) ================= */
+const ink = new Map();   // anchorId -> Map(strokeId -> stroke)
+const qas = new Map();   // questionId -> question
+const Store = { mode: 'boot', col: null };
+const syncEl = $('#sync');
+function setSync(t) { if (syncEl) syncEl.textContent = t; }
+
+function bbox(p) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < p.length; i += 2) {
+    const x = p[i], y = p[i + 1];
+    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
   }
-  document.querySelectorAll('.got input').forEach(function(b){
-    if (saved[b.id]) b.checked = true;
-    b.addEventListener('change', function(){
-      saved[b.id] = b.checked;
-      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
-      update();
+  return [x0, y0, x1, y1];
+}
+function encodeStroke(s) { return { i: s.id, c: s.c, t: s.t, w: s.w, p: s.p.map(v => Math.round(v * 2) / 2).join(' ') }; }
+function decodeStroke(o) {
+  if (!o || !o.p) return null;
+  const p = String(o.p).split(' ').map(Number);
+  if (p.length < 2 || p.length % 2 || p.some(v => !isFinite(v))) return null;
+  const s = { id: String(o.i), c: String(o.c || 'ink'), t: o.t === 'hl' ? 'hl' : 'pen', w: +o.w || 2.4, p };
+  s.bb = bbox(p);
+  return s;
+}
+
+/* ---- this device ---- */
+const LK = { ink: 'sdl2-ink', qa: 'sdl2-qa', prog: 'sdl2-progress' };
+function loadLocal() {
+  const raw = lsGet(LK.ink, {}) || {};
+  Object.keys(raw).forEach(aid => {
+    const m = new Map();
+    (raw[aid] || []).forEach(o => { const s = decodeStroke(o); if (s) m.set(s.id, s); });
+    if (m.size) ink.set(aid, m);
+  });
+  (lsGet(LK.qa, []) || []).forEach(q => { if (q && q.id) { if (q.status === 'pending') q.status = 'stopped'; qas.set(q.id, q); } });
+}
+let localTimer = 0;
+function saveLocalSoon() {
+  clearTimeout(localTimer);
+  localTimer = setTimeout(() => {
+    const out = {};
+    ink.forEach((m, aid) => { if (m.size) out[aid] = Array.from(m.values()).map(encodeStroke); });
+    const ok = lsSet(LK.ink, out) && lsSet(LK.qa, Array.from(qas.values()));
+    lsSet(LK.prog, progress.done);
+    setSync(ok ? 'Saved on this device' : 'Not saved: storage is full or blocked');
+  }, 350);
+}
+
+/* ---- Claude account: one private collection per person, one write at a time ---- */
+const queue = new Map();      // key -> job
+let running = false, currentKey = null;
+const localRev = new Map();   // anchorId -> rev of our last write (null = we deleted it)
+const chunkCount = new Map(); // anchorId -> chunk documents known to exist
+let progRev = null;
+const inkDocId = (aid, k) => 'ink~' + aid + '~' + k;
+function enqueue(key, job) {
+  if (Store.mode === 'local') { saveLocalSoon(); return; }
+  queue.set(key, job);
+  if (Store.mode === 'db') runQueue();
+}
+async function dbWrite(fn) {
+  try { return await fn(); }
+  catch (e) {
+    if (e && e.code === 'unavailable') { await sleep(400 + Math.random() * 600); return fn(); }
+    throw e;
+  }
+}
+async function runQueue() {
+  if (running) return;
+  running = true; setSync('Saving…');
+  let failed = null;
+  while (queue.size) {
+    const [key, job] = queue.entries().next().value;
+    queue.delete(key); currentKey = key;
+    try { await job(); } catch (e) { failed = e; }
+    currentKey = null;
+  }
+  running = false;
+  lsSet(LK.prog, progress.done);
+  if (!failed) setSync('Synced');
+  else if (failed.code === 'quota_exceeded') setSync('Storage full: erase some ink');
+  else if (failed.code === 'revoked') setSync('Sync stopped');
+  else setSync('Some changes not saved');
+}
+const busy = aid => queue.has('ink:' + aid) || currentKey === 'ink:' + aid;
+function chunksFor(aid) {
+  const list = Array.from((ink.get(aid) || new Map()).values()).map(encodeStroke);
+  const chunks = []; let cur = [], size = 0;
+  list.forEach(s => {
+    const len = s.p.length + 60;
+    if (cur.length && size + len > 170000) { chunks.push(cur); cur = []; size = 0; }
+    cur.push(s); size += len;
+  });
+  if (cur.length) chunks.push(cur);
+  return chunks;
+}
+async function writeAnchor(aid) {
+  const rev = Date.now() + '-' + DEV;
+  localRev.set(aid, rev);
+  const chunks = chunksFor(aid), old = chunkCount.get(aid) || 0;
+  for (let k = 0; k < chunks.length; k++) {
+    const body = { kind: 'ink', a: aid, k, n: chunks.length, rev, s: chunks[k] };
+    await dbWrite(() => Store.col.doc(inkDocId(aid, k)).set(body));
+  }
+  for (let k = chunks.length; k < old; k++) await dbWrite(() => Store.col.doc(inkDocId(aid, k)).delete());
+  chunkCount.set(aid, chunks.length);
+  if (!chunks.length) localRev.set(aid, null);
+}
+function saveAnchor(aid) { enqueue('ink:' + aid, () => writeAnchor(aid)); }
+function qaBody(q) { return { kind: 'qa', id: q.id, after: q.after || null, q: q.q || '', hand: !!q.hand, a: q.a || '', ts: q.ts, status: q.status, where: q.where || '' }; }
+function saveQA(q) { enqueue('qa:' + q.id, () => dbWrite(() => Store.col.doc('qa~' + q.id).set(qaBody(q)))); }
+function dropQA(id) { enqueue('qa:' + id, () => dbWrite(() => Store.col.doc('qa~' + id).delete())); }
+function saveProgress() {
+  lsSet(LK.prog, progress.done);
+  enqueue('progress', () => { progRev = Date.now() + '-' + DEV; return dbWrite(() => Store.col.doc('progress').set({ kind: 'progress', done: progress.done, rev: progRev })); });
+}
+
+let firstSnap = true;
+const seenRemoteQA = new Set();
+function applySnapshot(snap) {
+  const groups = new Map(), remoteQ = new Map(); let prog = null;
+  snap.docs.forEach(d => {
+    const b = d.data(); if (!b) return;
+    if (b.kind === 'ink' && b.a) {
+      let g = groups.get(b.a);
+      if (!g) { g = { rev: b.rev, n: b.n, have: 0, strokes: [], mixed: false }; groups.set(b.a, g); }
+      if (b.rev !== g.rev) g.mixed = true;
+      g.have++; (b.s || []).forEach(o => g.strokes.push(o));
+    } else if (b.kind === 'qa' && b.id) remoteQ.set(b.id, b);
+    else if (b.kind === 'progress') prog = b;
+  });
+  // ink
+  groups.forEach((g, aid) => {
+    chunkCount.set(aid, Math.max(chunkCount.get(aid) || 0, g.have));
+    if (busy(aid) || g.mixed || g.have !== g.n || g.rev === localRev.get(aid)) return;
+    const m = new Map();
+    g.strokes.forEach(o => { const s = decodeStroke(o); if (s) m.set(s.id, s); });
+    ink.set(aid, m); localRev.set(aid, g.rev); renderAnchor(aid);
+  });
+  Array.from(ink.keys()).forEach(aid => {
+    if (!groups.has(aid) && !busy(aid) && localRev.has(aid) && localRev.get(aid) !== null) {
+      ink.delete(aid); localRev.set(aid, null); renderAnchor(aid);
+    }
+  });
+  // questions
+  remoteQ.forEach((b, id) => {
+    seenRemoteQA.add(id);
+    if (inFlight.has(id) || queue.has('qa:' + id) || currentKey === 'qa:' + id) return;
+    const cur = qas.get(id);
+    if (cur && cur.a === b.a && cur.status === b.status) return;
+    const q = Object.assign({}, b); if (q.status === 'pending') q.status = 'stopped';
+    qas.set(id, q); renderQA(q);
+  });
+  Array.from(qas.keys()).forEach(id => {
+    if (!remoteQ.has(id) && seenRemoteQA.has(id) && !inFlight.has(id) && !queue.has('qa:' + id)) { seenRemoteQA.delete(id); removeQACard(id); qas.delete(id); }
+  });
+  renderDrawer();
+  // progress
+  if (prog && prog.rev !== progRev && !queue.has('progress') && currentKey !== 'progress') {
+    progRev = prog.rev; progress.done = Object.assign({}, prog.done || {}); renderProgress(); lsSet(LK.prog, progress.done);
+  }
+  if (firstSnap) {
+    firstSnap = false;
+    if (!prog && Object.keys(progress.done).length) saveProgress();
+    toolsReady = true; updateTools(); setSync('Synced');
+  }
+}
+
+async function boot() {
+  const C = window.claude;
+  if (!C || typeof C.use !== 'function') return useLocal('Saved on this device');
+  setSync('Connecting…');
+  let db = null, user = null, uid = null;
+  try { [db, user] = await Promise.all([C.use('db'), C.use('user')]); } catch (e) { /* treated as absent */ }
+  if (db && user) { try { uid = await user.id(); } catch (e) { uid = null; } }
+  if (!db || !uid) return useLocal('Saved on this device only');
+  try { Store.col = db.collection('data/users/' + uid); } catch (e) { return useLocal('Saved on this device only'); }
+  Store.mode = 'db';
+  setSync('Loading your notes…');
+  Store.col.onSnapshot(applySnapshot, () => setSync('Sync stopped. Reload to reconnect.'));
+  runQueue();
+}
+function useLocal(msg) {
+  Store.mode = 'local'; queue.clear();
+  loadLocal(); renderAllInk(); qas.forEach(renderQA); renderDrawer();
+  toolsReady = true; updateTools(); setSync(msg);
+}
+
+/* ================= ink ================= */
+const PEN_W = 2.4, HL_W = 18;
+let tool = 'read', lastInkTool = 'pen', toolsReady = false;
+let color = lsGet('sdl2-color', 'ink');
+if (['ink', 'blue', 'red', 'green'].indexOf(color) < 0) color = 'ink';
+let live = null, erasing = null, boxDrag = null;
+const groupEls = new Map();   // anchorId -> <g>
+const undoStack = [];
+
+function groupFor(aid) {
+  let g = groupEls.get(aid);
+  if (!g) { g = document.createElementNS(SVGNS, 'g'); g.setAttribute('data-a', aid); gStrokes.appendChild(g); groupEls.set(aid, g); placeGroup(aid, g); }
+  return g;
+}
+function placeGroup(aid, g) {
+  const a = anchorById.get(aid);
+  if (a) { g.setAttribute('transform', 'translate(' + a.x.toFixed(1) + ' ' + a.y.toFixed(1) + ')'); g.style.display = ''; }
+  else g.style.display = 'none';
+}
+function positionGroups() { groupEls.forEach((g, aid) => placeGroup(aid, g)); }
+function pathD(p) {
+  const f = v => (Math.round(v * 10) / 10).toString();
+  if (p.length < 4) return 'M' + f(p[0]) + ' ' + f(p[1]) + 'l0.1 0';
+  let d = 'M' + f(p[0]) + ' ' + f(p[1]);
+  for (let i = 2; i < p.length - 2; i += 2) {
+    d += 'Q' + f(p[i]) + ' ' + f(p[i + 1]) + ' ' + f((p[i] + p[i + 2]) / 2) + ' ' + f((p[i + 1] + p[i + 3]) / 2);
+  }
+  return d + 'L' + f(p[p.length - 2]) + ' ' + f(p[p.length - 1]);
+}
+function strokeEl(s) {
+  const el = document.createElementNS(SVGNS, 'path');
+  el.setAttribute('d', pathD(s.p));
+  el.setAttribute('class', 'stroke ' + (s.t === 'hl' ? 'hl' : 'c-' + s.c));
+  el.setAttribute('stroke-width', s.w);
+  el.setAttribute('data-id', s.id);
+  return el;
+}
+function renderAnchor(aid) {
+  const m = ink.get(aid);
+  if (!m || !m.size) { const g = groupEls.get(aid); if (g) g.textContent = ''; return; }
+  const g = groupFor(aid); g.textContent = '';
+  const all = Array.from(m.values());
+  all.filter(s => s.t === 'hl').forEach(s => g.appendChild(strokeEl(s)));   // highlights under pen ink
+  all.filter(s => s.t !== 'hl').forEach(s => g.appendChild(strokeEl(s)));
+  placeGroup(aid, g);
+}
+function renderAllInk() { ink.forEach((m, aid) => renderAnchor(aid)); }
+function addStroke(aid, s, record) {
+  let m = ink.get(aid);
+  if (!m) { m = new Map(); ink.set(aid, m); }
+  m.set(s.id, s);
+  const g = groupFor(aid), el = strokeEl(s);
+  if (s.t === 'hl') g.insertBefore(el, g.firstChild); else g.appendChild(el);
+  if (record) pushUndo({ type: 'add', items: [{ aid, s }] });
+  saveAnchor(aid);
+}
+function removeStrokes(items, record) {
+  const touched = new Set();
+  items.forEach(({ aid, s }) => {
+    const m = ink.get(aid); if (m) m.delete(s.id);
+    const g = groupEls.get(aid), el = g && g.querySelector('[data-id="' + CSS.escape(s.id) + '"]');
+    if (el) el.remove();
+    touched.add(aid);
+  });
+  if (record) pushUndo({ type: 'erase', items });
+  touched.forEach(saveAnchor);
+}
+function pushUndo(op) { undoStack.push(op); if (undoStack.length > 300) undoStack.shift(); updateTools(); }
+function undo() {
+  const op = undoStack.pop(); if (!op) return;
+  if (op.type === 'add') removeStrokes(op.items, false);
+  else op.items.forEach(({ aid, s }) => addStroke(aid, s, false));
+  updateTools();
+}
+
+function toDesign(e) {
+  const r = paper.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
+}
+const INTERACTIVE = 'a,button,input,label,textarea,abbr,.qa-x,select';
+function startInk(e) {
+  if (!toolsReady) return;
+  if (e.pointerType === 'touch') return;                       // fingers always scroll
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  try { inkSvg.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone */ }
+  const p = toDesign(e);
+  if (tool === 'erase') { erasing = { id: e.pointerId, items: [] }; eraseAt(p); return; }
+  if (tool === 'ask') { boxDrag = { id: e.pointerId, x0: p.x, y0: p.y, x1: p.x, y1: p.y }; drawBox(boxDrag); return; }
+  const el = document.createElementNS(SVGNS, 'path');
+  el.setAttribute('class', 'stroke ' + (tool === 'hl' ? 'hl' : 'c-' + color));
+  el.setAttribute('stroke-width', tool === 'hl' ? HL_W : PEN_W);
+  gLive.appendChild(el);
+  live = { id: e.pointerId, p: [p.x, p.y], el };
+  el.setAttribute('d', pathD(live.p));
+}
+inkSvg.addEventListener('pointerdown', e => { if (tool !== 'read') startInk(e); });
+// Apple Pencil writes even in Read mode, unless it taps a link, button or box.
+paper.addEventListener('pointerdown', e => {
+  if (tool !== 'read' || e.pointerType !== 'pen' || !toolsReady) return;
+  if (e.target.closest(INTERACTIVE) || e.target.closest('.qa')) return;
+  setTool(lastInkTool); startInk(e);
+}, true);
+inkSvg.addEventListener('pointermove', e => {
+  if (live && e.pointerId === live.id) {
+    const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
+    (evs.length ? evs : [e]).forEach(ev => {
+      const p = toDesign(ev), n = live.p.length, dx = p.x - live.p[n - 2], dy = p.y - live.p[n - 1];
+      if (dx * dx + dy * dy >= 0.8) live.p.push(p.x, p.y);
+    });
+    live.el.setAttribute('d', pathD(live.p));
+  } else if (erasing && e.pointerId === erasing.id) eraseAt(toDesign(e));
+  else if (boxDrag && e.pointerId === boxDrag.id) { const p = toDesign(e); boxDrag.x1 = p.x; boxDrag.y1 = p.y; drawBox(boxDrag); }
+});
+function endInk(e) {
+  if (live && e.pointerId === live.id) { const L = live; live = null; L.el.remove(); finishStroke(L.p); }
+  else if (erasing && e.pointerId === erasing.id) { const E = erasing; erasing = null; if (E.items.length) pushUndo({ type: 'erase', items: E.items }); }
+  else if (boxDrag && e.pointerId === boxDrag.id) { const B = boxDrag; boxDrag = null; finishBox(B); }
+}
+inkSvg.addEventListener('pointerup', endInk);
+inkSvg.addEventListener('pointercancel', endInk);
+// Stop iPad Safari from scrolling while the Pencil draws. Fingers still scroll.
+function stylusIn(e) { const t = e.changedTouches || []; for (let i = 0; i < t.length; i++) if (t[i].touchType === 'stylus') return true; return false; }
+paper.addEventListener('touchstart', e => {
+  if (!stylusIn(e) || !toolsReady) return;
+  if (tool !== 'read' || !(e.target.closest(INTERACTIVE) || e.target.closest('.qa'))) e.preventDefault();
+}, { passive: false });
+paper.addEventListener('touchmove', e => { if (stylusIn(e) && (tool !== 'read' || live)) e.preventDefault(); }, { passive: false });
+
+function finishStroke(abs) {
+  const a = anchorFor(abs[1]);
+  if (!a) return;
+  const rel = [];
+  for (let i = 0; i < abs.length; i += 2) rel.push(Math.round((abs[i] - a.x) * 2) / 2, Math.round((abs[i + 1] - a.y) * 2) / 2);
+  const hl = tool === 'hl';
+  const s = { id: uid8(), c: hl ? 'hl' : color, t: hl ? 'hl' : 'pen', w: hl ? HL_W : PEN_W, p: rel };
+  s.bb = bbox(rel);
+  addStroke(a.id, s, true);
+}
+function segDist2(x1, y1, x2, y2, x, y) {
+  const dx = x2 - x1, dy = y2 - y1, L = dx * dx + dy * dy;
+  let t = L ? ((x - x1) * dx + (y - y1) * dy) / L : 0;
+  t = Math.max(0, Math.min(1, t));
+  const ex = x1 + t * dx - x, ey = y1 + t * dy - y;
+  return ex * ex + ey * ey;
+}
+function nearStroke(p, x, y, r) {
+  const r2 = r * r;
+  if (p.length === 2) { const dx = p[0] - x, dy = p[1] - y; return dx * dx + dy * dy <= r2; }
+  for (let i = 0; i < p.length - 2; i += 2) if (segDist2(p[i], p[i + 1], p[i + 2], p[i + 3], x, y) <= r2) return true;
+  return false;
+}
+function eraseAt(p) {
+  const r = 12 / scale, hits = [];
+  ink.forEach((m, aid) => {
+    const a = anchorById.get(aid); if (!a) return;
+    const lx = p.x - a.x, ly = p.y - a.y;
+    m.forEach(s => {
+      const pad = r + s.w / 2, b = s.bb;
+      if (lx < b[0] - pad || lx > b[2] + pad || ly < b[1] - pad || ly > b[3] + pad) return;
+      if (nearStroke(s.p, lx, ly, pad)) hits.push({ aid, s });
     });
   });
-  update();
-  var links = [].slice.call(document.querySelectorAll('.rail a'));
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if (!e.isIntersecting) return;
-        links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id); });
-      });
-    }, { rootMargin: '-40% 0px -55% 0px' });
-    ['l1','l2','l3','l4','l5','practice'].forEach(function(id){ var s = document.getElementById(id); if (s) io.observe(s); });
+  if (hits.length) { removeStrokes(hits, false); erasing.items.push.apply(erasing.items, hits); }
+}
+
+/* ================= toolbar ================= */
+function setTool(t) {
+  if (t === 'ask' && !askReady) return;
+  tool = t;
+  if (t === 'pen' || t === 'hl') lastInkTool = t;
+  $$('.tool[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
+  document.body.classList.toggle('inking', t !== 'read');
+  if (t !== 'ask') hideBox();
+  pop.hidden = true;
+  if (t !== 'read') showHint();
+}
+function updateTools() {
+  $$('.tool[data-tool]').forEach(b => {
+    const t = b.dataset.tool;
+    b.disabled = (!toolsReady && t !== 'read') || (t === 'ask' && !askReady);
+  });
+  const u = $('#undo'); if (u) u.disabled = !undoStack.length;
+  $$('.sw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color === color)));
+}
+$$('.tool[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+$$('.sw button').forEach(b => b.addEventListener('click', () => { color = b.dataset.color; lsSet('sdl2-color', color); setTool('pen'); updateTools(); }));
+$('#undo').addEventListener('click', undo);
+document.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('textarea,input')) return;
+  const k = (e.key || '').toLowerCase();
+  if ((e.metaKey || e.ctrlKey) && k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const map = { r: 'read', p: 'pen', h: 'hl', e: 'erase', a: 'ask' };
+  if (map[k] && toolsReady) setTool(map[k]);
+  if (k === 'escape') { closePops(); setTool('read'); }
+});
+let hintShown = lsGet('sdl2-hint', false);
+function showHint() {
+  if (hintShown) return;
+  hintShown = true; lsSet('sdl2-hint', true);
+  const h = $('#hint'); h.hidden = false;
+  setTimeout(() => { h.hidden = true; }, 4500);
+}
+
+/* ================= ask Claude ================= */
+let askReady = false, sampleFn = null, canImages = false, pendingBox = null;
+const inFlight = new Set(), controllers = new Map();
+const PRINT = { ink: '#111111', blue: '#1D56D2', red: '#C0262D', green: '#17834A' };
+const RULES = [
+  'You are a friendly tutor inside "System Design Ladder", a study guide on system design. A student asked you a question while studying.',
+  'Answer rules:',
+  '- Simple words. Short sentences, under 20 words each. Active voice. No filler and no intro.',
+  '- Start with the direct answer in 1-2 sentences. Then add up to 5 short bullets if they help.',
+  '- Use a small concrete example or numbers when it helps.',
+  '- Give the full form of any abbreviation the first time you use it.',
+  '- Stay under 180 words unless the student asks for more depth.',
+  '- If the question is unclear, answer the most likely meaning and say what you assumed.',
+  'Format: Markdown with paragraphs, "- " bullets, **bold** and `code` only. No headings, no tables.'
+].join('\n');
+
+function drawBox(B) {
+  const x = Math.min(B.x0, B.x1), y = Math.min(B.y0, B.y1);
+  askRectEl.setAttribute('x', x); askRectEl.setAttribute('y', y);
+  askRectEl.setAttribute('width', Math.abs(B.x1 - B.x0)); askRectEl.setAttribute('height', Math.abs(B.y1 - B.y0));
+  askRectEl.setAttribute('visibility', 'visible');
+}
+function hideBox() { askRectEl.setAttribute('visibility', 'hidden'); }
+function toViewport(r) {
+  const pr = paper.getBoundingClientRect();
+  return { left: pr.left + r.x * scale, top: pr.top + r.y * scale, right: pr.left + (r.x + r.w) * scale, bottom: pr.top + (r.y + r.h) * scale };
+}
+function finishBox(B) {
+  const r = { x: Math.min(B.x0, B.x1), y: Math.min(B.y0, B.y1), w: Math.abs(B.x1 - B.x0), h: Math.abs(B.y1 - B.y0) };
+  if (r.w < 14 || r.h < 14) { hideBox(); return; }
+  pendingBox = r;
+  $('#askq').value = '';
+  place(askPop, toViewport(r));
+  if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) $('#askq').focus();
+}
+function cancelAsk() { askPop.hidden = true; pendingBox = null; hideBox(); }
+$('#ask-cancel').addEventListener('click', cancelAsk);
+$('#ask-go').addEventListener('click', () => {
+  const r = pendingBox, typed = $('#askq').value.trim();
+  askPop.hidden = true; pendingBox = null; hideBox(); setTool('read');
+  if (r) askClaude({ rect: r, typed });
+});
+$('#gq-go').addEventListener('click', () => {
+  const typed = $('#gq').value.trim();
+  if (!typed) return;
+  $('#gq').value = '';
+  askClaude({ rect: null, typed });
+});
+
+function textInRect(vr) {
+  const out = []; let total = 0;
+  const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      if (!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const p = n.parentElement;
+      return (!p || p.closest('#ink,script,style,.qa-x,.got,.case-s')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const range = document.createRange(); let n;
+  while ((n = walker.nextNode()) && total < 5000) {
+    range.selectNodeContents(n);
+    const b = range.getBoundingClientRect();
+    if (!b.width && !b.height) continue;
+    if (b.right < vr.left || b.left > vr.right || b.bottom < vr.top || b.top > vr.bottom) continue;
+    const t = n.nodeValue.replace(/\s+/g, ' ').trim();
+    out.push(t); total += t.length + 1;
   }
+  return out.join(' ').slice(0, 5000);
+}
+function describeWhere(r) {
+  const names = [];
+  anchors.filter(a => a.y < r.y + r.h && a.y + a.h > r.y).forEach(a => {
+    const lv = a.el.closest('.level'), art = a.el.closest('.concept');
+    const lvName = lv ? lv.id.toUpperCase() + ' ' + ((lv.querySelector('.lv-head h2') || {}).textContent || '') : '';
+    const title = art ? (art.querySelector('h3') || {}).textContent : (a.el.querySelector('h2,h3') || {}).textContent;
+    names.push([lvName, title].filter(Boolean).join(' › ') || 'System Design Ladder');
+  });
+  return Array.from(new Set(names)).slice(0, 3).join('; ') || 'System Design Ladder';
+}
+function inkImage(r) {
+  const items = [];
+  ink.forEach((m, aid) => {
+    const a = anchorById.get(aid); if (!a) return;
+    m.forEach(s => {
+      if (s.t === 'hl') return;
+      const b = s.bb;
+      if (b[2] + a.x < r.x || b[0] + a.x > r.x + r.w || b[3] + a.y < r.y || b[1] + a.y > r.y + r.h) return;
+      items.push({ s, a });
+    });
+  });
+  if (!items.length) return Promise.resolve(null);
+  const pad = 10, k = Math.min(2, 1600 / Math.max(r.w + 2 * pad, r.h + 2 * pad));
+  const cv = document.createElement('canvas');
+  cv.width = Math.ceil((r.w + 2 * pad) * k); cv.height = Math.ceil((r.h + 2 * pad) * k);
+  const g = cv.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  items.forEach(({ s, a }) => {
+    g.strokeStyle = PRINT[s.c] || '#111111'; g.lineWidth = Math.max(2, s.w * k);
+    g.beginPath();
+    for (let i = 0; i < s.p.length; i += 2) {
+      const x = (s.p[i] + a.x - r.x + pad) * k, y = (s.p[i + 1] + a.y - r.y + pad) * k;
+      if (i) g.lineTo(x, y); else g.moveTo(x, y);
+    }
+    if (s.p.length === 2) g.lineTo((s.p[0] + a.x - r.x + pad) * k + 0.5, (s.p[1] + a.y - r.y + pad) * k);
+    g.stroke();
+  });
+  return new Promise(res => cv.toBlob(b => res(b), 'image/png'));
+}
+function buildPrompt(where, pageText, hasImage, typed) {
+  let s = RULES + '\n\nWhere the student is in the guide: ' + where + '\n';
+  if (pageText) s += '\nPrinted text in the part of the page they marked:\n"""\n' + pageText + '\n"""\n';
+  if (hasImage) s += "\nThe attached image shows the student's own handwriting and drawings in that area, in dark ink on white. Their question may be written there. Read it carefully.\n";
+  if (typed) s += '\nThe student\'s question: ' + typed;
+  else if (hasImage) s += '\nThe student did not type a question. Answer the question in their handwriting. If there is no question, explain what they marked.';
+  else s += '\nThe student did not type a question. Explain the marked part simply, with one small example.';
+  return s;
+}
+const ERR = {
+  not_granted: 'Claude access was not allowed. Reload the page to be asked again.',
+  sampling_disabled: 'Claude is not available for this account.',
+  rate_limited: 'Too many questions right now. Wait a minute, then ask again.',
+  session_expired: 'Sign in to Claude again, then reload this page.',
+  refused: 'Claude could not answer this. Try asking it another way.',
+  prompt_too_large: 'The marked area holds too much text. Mark a smaller area.',
+  image_rejected: 'Claude could not read the handwriting image. Type the question instead.',
+  empty_completion: 'Claude returned no answer. Try asking it another way.'
+};
+const errText = code => ERR[code] || 'The answer was interrupted. Ask again.';
+const HIDE_ASK = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
+
+async function askClaude({ rect, typed }) {
+  if (!sampleFn) return;
+  const id = uid8();
+  let after = null, where = 'A general question from the Questions panel', pageText = '', img = null;
+  if (rect) {
+    const a = anchorFor(rect.y + 2); after = a ? a.id : null;
+    where = describeWhere(rect);
+    pageText = textInRect(toViewport(rect));
+    if (canImages) { try { img = await inkImage(rect); } catch (e) { img = null; } }
+  }
+  const q = { id, after, q: typed, hand: !!img, a: '', ts: Date.now(), status: 'pending', where };
+  qas.set(id, q); inFlight.add(id); renderQA(q); renderDrawer(); saveQA(q);
+  const card = paper.querySelector('.qa[data-qa="' + CSS.escape(id) + '"]');
+  if (card) setTimeout(() => goTo(card), 60); else openDrawer();
+  const ctl = new AbortController(); controllers.set(id, ctl);
+  const opts = { signal: ctl.signal, onText: ({ text }) => { q.a = text; renderQA(q); renderDrawerItem(q); } };
+  if (img) opts.images = [img];
+  try {
+    const res = await sampleFn(buildPrompt(where, pageText, !!img, typed), opts);
+    q.a = res.text; q.status = res.truncated ? 'cut' : 'done';
+  } catch (e) {
+    const code = e && e.code;
+    q.a = code === 'refused' ? '' : ((e && e.text) || q.a || '');
+    q.status = code === 'cancelled' ? 'stopped' : 'error';
+    q.err = code === 'cancelled' ? '' : errText(code);
+    if (code === 'images_unavailable') canImages = false;
+    if (HIDE_ASK.indexOf(code) >= 0) disableAsk(errText(code));
+  } finally {
+    controllers.delete(id); inFlight.delete(id);
+    renderQA(q); renderDrawer(); saveQA(q);
+  }
+}
+
+/* small, safe Markdown: everything is escaped first */
+function md(src) {
+  const inline = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>');
+  let html = '', list = null, para = [], code = null;
+  const flushP = () => { if (para.length) { html += '<p>' + inline(para.join(' ')) + '</p>'; para = []; } };
+  const flushL = () => { if (list) { html += '</' + list + '>'; list = null; } };
+  String(src).replace(/\r/g, '').split('\n').forEach(ln => {
+    if (code !== null) { if (/^```/.test(ln)) { html += '<pre><code>' + esc(code) + '</code></pre>'; code = null; } else code += (code ? '\n' : '') + ln; return; }
+    if (/^```/.test(ln)) { flushP(); flushL(); code = ''; return; }
+    let m;
+    if ((m = ln.match(/^\s*[-*•]\s+(.*)/))) { flushP(); if (list !== 'ul') { flushL(); html += '<ul>'; list = 'ul'; } html += '<li>' + inline(m[1]) + '</li>'; return; }
+    if ((m = ln.match(/^\s*\d+[.)]\s+(.*)/))) { flushP(); if (list !== 'ol') { flushL(); html += '<ol>'; list = 'ol'; } html += '<li>' + inline(m[1]) + '</li>'; return; }
+    if ((m = ln.match(/^#{1,6}\s+(.*)/))) { flushP(); flushL(); html += '<p><b>' + inline(m[1]) + '</b></p>'; return; }
+    if (!ln.trim()) { flushP(); flushL(); return; }
+    flushL(); para.push(ln.trim());
+  });
+  if (code !== null) html += '<pre><code>' + esc(code) + '</code></pre>';
+  flushP(); flushL();
+  return html;
+}
+function qLabel(q) { return q.q ? esc(q.q) : (q.hand ? 'Your handwritten question' : 'Explain this part'); }
+function answerHTML(q) {
+  let h = q.a ? md(q.a) : (q.status === 'pending' ? '<p class="wait">Thinking…</p>' : '');
+  if (q.status === 'cut') h += '<p class="note">The answer was cut short. Ask a smaller question for the rest.</p>';
+  if (q.status === 'stopped') h += '<p class="note">Stopped.</p>';
+  if (q.status === 'error') h += '<p class="note">' + esc(q.err || errText()) + '</p>';
+  return h;
+}
+function renderQA(q) {
+  if (!q.after) return;
+  let el = paper.querySelector('.qa[data-qa="' + CSS.escape(q.id) + '"]');
+  if (!el) {
+    const target = paper.querySelector('[data-anchor="' + CSS.escape(q.after) + '"]');
+    if (!target) return;
+    el = document.createElement('div');
+    el.className = 'qa'; el.dataset.qa = q.id; el.dataset.anchor = 'qa-' + q.id; el.dataset.after = q.after;
+    let ref = target;
+    while (ref.nextElementSibling && ref.nextElementSibling.classList.contains('qa') && ref.nextElementSibling.dataset.after === q.after) ref = ref.nextElementSibling;
+    ref.after(el);
+  }
+  el.innerHTML = '<div class="qa-h"><span class="tag">You asked</span><span class="qa-q">' + qLabel(q) + '</span></div>' +
+    '<div class="qa-a">' + answerHTML(q) + '</div>' +
+    '<div class="qa-x">' + (q.status === 'pending' ? '<button class="btn small" data-act="stop">Stop</button>' : '') +
+    '<button class="btn small danger" data-act="del">Delete</button></div>';
+  if (q.status !== 'pending') wrapAbbreviations(el.querySelector('.qa-a'));
+  queueFit();
+}
+function removeQACard(id) { const el = paper.querySelector('.qa[data-qa="' + CSS.escape(id) + '"]'); if (el) { el.remove(); queueFit(); } }
+function deleteQA(id) {
+  const c = controllers.get(id); if (c) c.abort();
+  removeQACard(id); qas.delete(id); dropQA(id);
+  const aid = 'qa-' + id;
+  if (ink.has(aid)) { ink.delete(aid); renderAnchor(aid); saveAnchor(aid); }
+  renderDrawer();
+}
+function armDelete(btn, id) {
+  if (btn.dataset.armed) { deleteQA(id); return; }
+  btn.dataset.armed = '1'; btn.textContent = 'Tap again to delete';
+  setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = 'Delete'; } }, 3000);
+}
+paper.addEventListener('click', e => {
+  const b = e.target.closest('.qa [data-act]'); if (!b) return;
+  const id = b.closest('.qa').dataset.qa;
+  if (b.dataset.act === 'stop') { const c = controllers.get(id); if (c) c.abort(); }
+  else if (b.dataset.act === 'del') armDelete(b, id);
+});
+
+/* ================= questions drawer ================= */
+const drawer = $('#drawer');
+function openDrawer() { drawer.hidden = false; renderDrawer(); }
+$('#qbtn').addEventListener('click', () => { if (drawer.hidden) openDrawer(); else drawer.hidden = true; });
+$('#drawer-close').addEventListener('click', () => { drawer.hidden = true; });
+function itemHTML(q) {
+  const d = new Date(q.ts || Date.now());
+  return '<div class="meta">' + esc(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })) + ' · ' + esc(q.where || '') + '</div>' +
+    '<div class="q">' + qLabel(q) + '</div><div class="qa-a">' + answerHTML(q) + '</div>' +
+    '<div class="row" style="justify-content:flex-start">' +
+    (q.after && paper.querySelector('.qa[data-qa="' + CSS.escape(q.id) + '"]') ? '<button class="btn small" data-go="' + esc(q.id) + '">Show on page</button>' : '') +
+    (q.status === 'pending' ? '<button class="btn small" data-stop="' + esc(q.id) + '">Stop</button>' : '') +
+    '<button class="btn small danger" data-del="' + esc(q.id) + '">Delete</button></div>';
+}
+function renderDrawer() {
+  const n = qas.size, badge = $('#qcount'); if (badge) badge.textContent = n ? String(n) : '';
+  if (drawer.hidden) return;
+  const list = $('#qlist');
+  const items = Array.from(qas.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  list.innerHTML = items.length ? '' : '<p class="empty">No questions yet. Pick Ask in the tool bar, then draw a box around anything on the page.</p>';
+  items.forEach(q => { const div = document.createElement('div'); div.className = 'item'; div.dataset.item = q.id; div.innerHTML = itemHTML(q); list.appendChild(div); });
+}
+function renderDrawerItem(q) {
+  if (drawer.hidden) return;
+  const div = $('#qlist').querySelector('[data-item="' + CSS.escape(q.id) + '"]');
+  if (div) div.innerHTML = itemHTML(q); else renderDrawer();
+}
+$('#qlist').addEventListener('click', e => {
+  const go = e.target.closest('[data-go]'), st = e.target.closest('[data-stop]'), del = e.target.closest('[data-del]');
+  if (go) { const c = paper.querySelector('.qa[data-qa="' + CSS.escape(go.dataset.go) + '"]'); if (c) { if (window.innerWidth < 900) drawer.hidden = true; goTo(c); } }
+  if (st) { const c = controllers.get(st.dataset.stop); if (c) c.abort(); }
+  if (del) armDelete(del, del.dataset.del);
+});
+function disableAsk(msg) {
+  askReady = false; if (tool === 'ask') setTool('read');
+  updateTools();
+  const note = $('#asknote'); if (note) { note.textContent = msg; note.hidden = false; }
+  $('#gq-box').hidden = true;
+}
+async function initSample() {
+  const C = window.claude;
+  if (!C || typeof C.use !== 'function') { disableAsk('Asking Claude works in the Claude version of this page. Your ink and highlights still save on this device.'); return; }
+  try { sampleFn = await C.use('sample'); } catch (e) { sampleFn = null; }
+  if (!sampleFn) { disableAsk('Asking Claude is not available in this view.'); return; }
+  try { const lim = await sampleFn.limits(); canImages = !!(lim && lim.images); } catch (e) { canImages = false; }
+  askReady = true; updateTools();
+  $('#gq-box').hidden = false; $('#asknote').hidden = true;
+}
+
+/* ================= start ================= */
+wrapAbbreviations(paper);
+renderProgress();
+updateTools();
+fit();
+if ('ResizeObserver' in window) new ResizeObserver(queueFit).observe(paper);
+window.addEventListener('resize', queueFit);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueFit);
+setTimeout(queueFit, 1500);
+if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) setTimeout(() => goTo(t), 400); }
+boot();
+initSample();
 })();
 </script>
 
