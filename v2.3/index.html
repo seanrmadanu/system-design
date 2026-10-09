@@ -2883,16 +2883,18 @@ function applyNotes() {
   b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + EYE + (notesOff ? '' : '<path d="M3 3l18 18"/>') + '</svg>' + (notesOff ? 'Show notes' : 'Hide notes');
 }
 function toggleNotes() {
-  let keep = null;   // keep the block you are reading at the same spot on screen
+  // keep the line you are reading (30% down the screen) at the same spot after the page resizes
+  const yRef = Math.max(80, window.innerHeight * 0.3);
+  let keep = null;
   for (const a of anchors) {
     if (a.el.classList.contains('qa')) continue;
     const r = a.el.getBoundingClientRect();
-    if (r.bottom > 64) { keep = { el: a.el, top: r.top }; break; }
+    if (r.bottom > yRef) { keep = { el: a.el, frac: r.height ? Math.max(0, (yRef - r.top) / r.height) : 0 }; break; }
   }
   notesOff = !notesOff; lsSet('sdl2-notes-off', notesOff);
   if (notesOff) { setTool('read'); pop.hidden = true; drawer.hidden = true; }
   applyNotes(); fit();
-  if (keep) window.scrollBy({ top: keep.el.getBoundingClientRect().top - keep.top, behavior: 'instant' });
+  if (keep) { const r = keep.el.getBoundingClientRect(); window.scrollBy({ top: r.top + keep.frac * r.height - yRef, behavior: 'instant' }); }
 }
 $('#notesbtn').addEventListener('click', toggleNotes);
 
