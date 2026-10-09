@@ -124,7 +124,9 @@ body.inking #paper{-webkit-user-select:none;user-select:none;-webkit-touch-callo
 figure{margin:0;min-width:0}
 .c-fig{display:grid;gap:8px;margin-top:16px}
 .c-fig .box{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
-.c-fig svg{display:block;width:100%;height:auto;color:var(--ink)}
+.c-fig svg{display:block;height:auto;color:var(--ink)}
+.c-fig svg[role="img"]{width:100%}
+.c-fig .box svg:not([role="img"]){max-width:100%;margin:0 auto}
 figcaption{font-size:14px;color:var(--muted);line-height:1.45}
 pre.mermaid{margin:0;background:transparent;text-align:center;font-family:var(--body)}
 
@@ -2904,14 +2906,16 @@ initSample();
   blocks.forEach(function(b){ b.dataset.src = b.textContent; });
   var dark = window.matchMedia('(prefers-color-scheme: dark)');
   function tok(n){ return getComputedStyle(root).getPropertyValue(n).trim(); }
+  var gen = 0;
   function render(){
-    blocks.forEach(function(b){ b.removeAttribute('data-processed'); b.textContent = b.dataset.src; });
-    var ink = tok('--ink'), muted = tok('--muted'), soft = tok('--soft'), panel = tok('--panel');
+    var my = ++gen, ink = tok('--ink'), muted = tok('--muted'), soft = tok('--soft'), panel = tok('--panel');
+    var nat = { useMaxWidth: false };
     mermaid.initialize({
       startOnLoad: false, securityLevel: 'strict', theme: 'base',
       fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+      flowchart: nat, sequence: nat, state: nat,
       themeVariables: {
-        darkMode: dark.matches, fontSize: '14px',
+        darkMode: dark.matches, fontSize: '15px',
         background: panel, mainBkg: soft, primaryColor: soft, primaryTextColor: ink,
         primaryBorderColor: muted, secondaryColor: panel, tertiaryColor: panel,
         lineColor: muted, textColor: ink, nodeBorder: muted,
@@ -2923,7 +2927,17 @@ initSample();
         activationBkgColor: soft, activationBorderColor: muted
       }
     });
-    mermaid.run({ nodes: blocks, suppressErrors: true }).catch(function(){ root.classList.remove('js'); });
+    blocks.forEach(function(b, i){
+      var id = 'mmd-' + my + '-' + i;
+      mermaid.render(id, b.dataset.src).then(function(r){
+        if (my !== gen) return;
+        b.innerHTML = r.svg; b.setAttribute('data-processed', 'true');
+      }, function(){
+        ['', 'd'].forEach(function(p){ var n = document.getElementById(p + id); if (n) n.remove(); });
+        if (my !== gen) return;
+        b.textContent = b.dataset.src; b.setAttribute('data-processed', 'true');
+      });
+    });
   }
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(render);
   if (dark.addEventListener) dark.addEventListener('change', render);
